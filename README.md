@@ -18,7 +18,7 @@ For access to the Mouser API you need a Mouser account and a shopping cart API k
 You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
 key. This is different. If the key is properly set up you can find it on the Mouser 
 WEB page here:
-![Mouser API](https://github.com/SergeoLacruz/inventree-supplier_panel/blob/master/pictures/mouser_apikey.png)
+![Mouser API](https://github.com/SergeoLacruz/inventree-supplier_panel/blob/master/pictures/mouser_api.png)
 
 ## Installation
 
