@@ -1,3 +1,0 @@
-[inventree_plugins]
-SupplierCartPanel = inventree_supplier_panel.supplier_panel:SupplierCartPanel
-
