@@ -5,6 +5,7 @@ from order.views import PurchaseOrderDetail
 from order.models import PurchaseOrder
 from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
+from inventree_supplier_panel.version import PLUGIN_VERSION
 import requests
 import json
 
@@ -20,8 +21,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Mouser Cart"
     AUTHOR = "Michael"
+    PUBLISH_DATE = "2023-04-23T20:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a mouser shopping cart."
-    VERSION = "0.1"
+    VERSION = PLUGIN_VERSION
 
     SETTINGS = {
         'SUPPLIERKEY': {
