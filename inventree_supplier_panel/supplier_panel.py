@@ -40,12 +40,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'name': 'Proxy URL',
             'description': 'URL to proxy server if needed e.g. http://user:password@ipaddress:port',
         },
-        'LOCALE': {
-            'name': 'Locale',
-            'description': 'Here you can set locale string for decimal conversion',
-            'default': 'de_DE.UTF-8',
-        },
-
     }
 
 # Create some help  
