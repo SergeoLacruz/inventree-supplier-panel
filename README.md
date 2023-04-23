@@ -18,7 +18,7 @@ For access to the Mouser API you need a Mouser account and a shopping cart API k
 You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
 key. This is different. If the key is properly set up you can find it on the Mouser 
 WEB page here:
-![Mouser API](https://github.com/SergeoLacruz/inventree-supplier_panel/blob/master/pictures/mouser_api.png)
+![Mouser API](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_api.png)
 
 ## Installation
 
@@ -50,7 +50,7 @@ This is called Mouser actions. On the panel there are three things:
 - a status bar that shows error messages
 - a table that contains the created Mouser shopping cart. 
 
-![Mouser Panel](https://github.com/SergeoLacruz/inventree-supplier_panel/blob/master/pictures/mouser_apikey.png)
+![Mouser Panel](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_panel.png)
 
 The button initiates the transfer. It takes each element of your PO, takes the SKU of
 the Mouser supplier part and adds it into your shopping cart. When finished it downloads
