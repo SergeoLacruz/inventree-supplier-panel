@@ -85,6 +85,3 @@ keys. We use a team key to solve this.
 Actually this works only for Mouser. Other suppliers like Digikey, Farnell or Buerklin
 might follow. 
 
-### Visibility
-Actually the panel is always displayed even then the PO has a different supplier. If you
-hit the button you will get an error in that case.

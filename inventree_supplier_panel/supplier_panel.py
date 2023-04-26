@@ -5,6 +5,7 @@ from order.views import PurchaseOrderDetail
 from order.models import PurchaseOrder
 from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
+from company.models import Company
 from inventree_supplier_panel.version import PLUGIN_VERSION
 import requests
 import json
@@ -15,7 +16,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     Message=''
     Data=[]
     Total=0
-    Proxies={}
 
     NAME = "SupplierCart"
     SLUG = "suppliercart"
@@ -60,12 +60,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_custom_panels(self, view, request):
         panels = []
 
+        Supplier=Company.objects.get(name='Mouser')
         if isinstance(view, PurchaseOrderDetail):
-            panels.append({
-                'title': 'Mouser Actions',
-                'icon': 'fa-user',
-                'content_template': 'supplier_panel/mouser.html', 
-            })
+            order=view.get_object()
+            if order.supplier.pk==Supplier.pk:
+                panels.append({
+                    'title': 'Mouser Actions',
+                    'icon': 'fa-user',
+                    'content_template': 'supplier_panel/mouser.html', 
+                })
         return panels
 
     def setup_urls(self):
@@ -75,11 +78,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 #------------------------- Helper functions ------------------------------------
     def SendRequest(self, Cart, Path):
+        if self.get_setting('PROXY_CON') != '':
+            Proxies = {self.get_setting('PROXY_CON') : self.get_setting('PROXY_URL')}
+        else:
+            Proxies = {}
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
         try:
             Response=requests.post(Path+'?apiKey='+self.get_setting('SUPPLIERKEY')+'&countryCode=DE',
                     verify=False,
-                    proxies=self.Proxies,
+                    proxies=Proxies,
                     data=json.dumps(Cart),
                     timeout=5,
                     headers=headers)
@@ -127,10 +134,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # This is called when the button is pressed. 
 
     def TransferCart(self,request,pk):
-        if self.get_setting('PROXY_CON') != '':
-            self.Proxies = {self.get_setting('PROXY_CON') : self.get_setting('PROXY_URL')}
-        else:
-            self.Proxies = {}
         if self.get_setting('CARTKEY') == '':
             Response=self.CreateCartKey()
             if Response.status_code != 200:
