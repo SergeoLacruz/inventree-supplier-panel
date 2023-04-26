@@ -39,7 +39,7 @@ and save the key in the field.
 ### Proxies
 In case you need to authorise a proxy server between your InvenTree server and the internet
 put the required setting here. The argument for the request is {'Proxy CON' : 'Proxy URL'} for
-example: { 'https' : 'https://user:password@ipaddress:port' }.
+example: ```{ 'https' : 'https://user:password@ipaddress:port' }.```
 If you do not need this just leave Proxy CON empty. 
 
 ## What it does
