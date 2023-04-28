@@ -79,15 +79,15 @@ and the supplier must be Mouser. The supplier name is hard coded here. This is n
 but works so far. It will be changed when the plugin is extended to support several suppliers.
 The content_template is an html file that defines how the panel content looks. 
 
-- ``` def get_custom_panels(self, view, request) ```
+``` def get_custom_panels(self, view, request) ```
 Here we define the url that controls the panel. Let's look at the details here:
 
-  - ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
+- ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
 come to that later when we discuss the template.
 
-  - ```self.TransferCart``` is the function that is called. It is defined later in this plugin
+- ```self.TransferCart``` is the function that is called. It is defined later in this plugin
 
-  - ```transfercart/(?P<pk>\d+)/``` The string that looks a bit like white noise defines the url. transfercart
+- ```transfercart/(?P<pk>\d+)/``` The string that looks a bit like white noise defines the url. transfercart
 ist the url togehter with the slug. The ? is well known for parameters. In this case we get just one 
 parameter, the orders primary key. \d+ is a regular expression that limits the parameters to a digital
 number with n digits. 
