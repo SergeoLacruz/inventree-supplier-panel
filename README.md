@@ -10,7 +10,7 @@ The shopping cart will be created in your Mouser account.
 ## Prerequisites
 
 For this plugin to work you need to have Mouser as as supplier in your InvenTree data.
-The supplier name needs to be Mouser, not Mouser inc. or something like that. Suppliers
+The supplier name needs to be Mouser, not Mouser Inc. or something like that. Suppliers
 parts must be added to all the parts that you like to buy at Mouser. All Mouser supplier
 parts need to have the proper SKU. 
 
@@ -33,16 +33,20 @@ Place here you Mouser shopping cart key.
 ### Supplier shopping cart key
 Each shopping cart on the Mouser page has a designated key. You can have several shopping carts 
 in our account. Each cart has a separate key. The plugin puts your PO into the cart with this key.
-If you do not have a shopping cart key, leave the field empty. the plugin will create a cart
+If you do not have a shopping cart key, leave the field empty. The plugin will create a cart
 and save the key in the field. 
 
 ### Proxies
 In case you need to authorise a proxy server between your InvenTree server and the internet
 put the required setting here. The argument for the request is {'Proxy CON' : 'Proxy URL'} for
-example: ```{ 'https' : 'https://user:password@ipaddress:port' }.```
+example: 
+
+```{ 'https' : 'https://user:password@ipaddress:port' }.```
+
 If you do not need this just leave Proxy CON empty. 
 
 ## What it does
+
 The plugin creates a new panel which is visible on the purchase order details view. 
 This is called Mouser actions. On the panel there are three things: 
 
@@ -58,7 +62,7 @@ the shopping cart from the Mouser WEB page and puts the data into the table. Her
 the actual stock at mouser and an OK bubble when the stock is large enough for you order. 
 You also find the actual price as well as the total amount of your order. 
 
-All items that have been in the cart before get deleted. Tha cart always contains only the parts
+All items that have been in the cart before get deleted. The cart always contains only the parts
 in your PO. 
 
 The plugin also transfers your IPNs (internal part numbers). Mouser reserves a field 
@@ -66,8 +70,27 @@ for such numbers. They show up in your shopping cart as well as on the invoice a
 on the labels that they put onto the bags and reels. 
 
 ## How it works
-Work to do :-)
 
+``` def get_custom_panels(self, view, request) ```
+
+This defines the panel. The function must return a panels list. Here it return just one 
+panel. The panel is returned under two contitions: The view must be PurchaseOrderDetail 
+and the supplier must be Mouser. The supplier name is hard coded here. This is not a good style
+but works so far. It will be changed when the plugin is extended to support several suppliers.
+The content_template is an html file that defines how the panel content looks. 
+
+- ``` def get_custom_panels(self, view, request) ```
+Here we define the url that controls the panel. Let's look at the details here:
+
+-- ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
+come to that later when we discuss the template.
+
+-- ```self.TransferCart``` is the function that is called. It is defined later in this plugin
+
+-- ```transfercart/(?P<pk>\d+)/``` The string that looks a bit like white noise defines the url. transfercart
+ist the url togehter with the slug. The ? is well known for parameters. In this case we get just one 
+parameter, the orders primary key. \d+ is a regular expression that limits the parameters to a digital
+number with n digits. 
 
 ## Issues
 ### Mouser messed up
