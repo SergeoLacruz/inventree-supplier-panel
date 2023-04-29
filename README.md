@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-# The inventree-supplier-panel
+# The invenTree-supplier-panel
 
 This is a plugin for [InvenTree](https://inventree.org), which translates a purchase order
 into a Mouser shopping cart. After using this plugin you can directly order the shopping
@@ -10,9 +10,8 @@ The shopping cart will be created in your Mouser account.
 ## Prerequisites
 
 For this plugin to work you need to have Mouser as as supplier in your InvenTree data.
-The supplier name needs to be Mouser, not Mouser Inc. or something like that. Suppliers
-parts must be added to all the parts that you like to buy at Mouser. All Mouser supplier
-parts need to have the proper SKU. 
+Suppliers parts must be added to all the parts that you like to buy at Mouser. All Mouser supplier
+parts need to have the proper SKU. It needs to match the Mouser part number exactly.
 
 For access to the Mouser API you need a Mouser account and a shopping cart API key. 
 You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
@@ -27,8 +26,12 @@ pip install git+https://github.com/SergeoLacruz/inventree-supplier-panel
 ```
 
 ## Configuration 
+### Mouser Supplier ID
+Place here the primary key of the supplier Mouser in your system. You can select from a list of
+our suppliers.
+
 ### Supplier API key
-Place here you Mouser shopping cart key. 
+Place here you Mouser key for manipulating shopping carts. 
 
 ### Supplier shopping cart key
 Each shopping cart on the Mouser page has a designated key. You can have several shopping carts 
@@ -41,7 +44,7 @@ In case you need to authorise a proxy server between your InvenTree server and t
 put the required setting here. The argument for the request is {'Proxy CON' : 'Proxy URL'} for
 example: 
 
-```{ 'https' : 'https://user:password@ipaddress:port' }.```
+```{ 'https' : 'https://user:password@ipaddress:port' }```
 
 If you do not need this just leave Proxy CON empty. 
 
@@ -71,15 +74,14 @@ on the labels that they put onto the bags and reels.
 
 ## How it works
 
-``` def get_custom_panels(self, view, request) ```
+```def get_custom_panels(self, view, request)```
 
 This defines the panel. The function must return a panels list. Here it return just one 
 panel. The panel is returned under two contitions: The view must be PurchaseOrderDetail 
-and the supplier must be Mouser. The supplier name is hard coded here. This is not a good style
-but works so far. It will be changed when the plugin is extended to support several suppliers.
+and the supplier must be Mouser. 
 The content_template is an html file that defines how the panel content looks. 
 
-``` def get_custom_panels(self, view, request) ```
+```def get_custom_panels(self, view, request)```
 Here we define the url that controls the panel. Let's look at the details here:
 
 - ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
@@ -96,13 +98,19 @@ number with n digits.
 ### Mouser messed up
 It can happen that the Mouser shopping cart API gets messed up and no item are added into
 your cart. Just delete the cart in that case and delete the key in the plugin setting.
-A new key will be created an usually works. 
+A new key will be created and usually works. 
 
 ### API keys are global
 The API keys and especially the proxy password are user specific and shall not be given to 
-others. up to now there are no user specific settings in InvenTree. So these keys are global
+others. Up to now there are no user specific settings in InvenTree. So these keys are global
 and visible to, at least every admin. All users who use the plugin will have the same
 keys. We use a team key to solve this.
+
+### Prices
+The prices and the total will differ between the Mouser shopping cart and your InvenTree PO.
+The prices in the Mouser shopping cart are valid because these values get downloaded every time
+you push the button. The prices in you InvenTree database might be out of date. Additionally
+no price will be entered into the InvenTree PO when you add parts from the allocate stock table. 
 
 ### Other suppliers
 Actually this works only for Mouser. Other suppliers like Digikey, Farnell or Buerklin

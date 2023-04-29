@@ -26,6 +26,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     VERSION = PLUGIN_VERSION
 
     SETTINGS = {
+        'MOUSER_PK': {
+            'name': 'Mouser Supplier ID',
+            'description': 'Primary key of the Mouser supplier',
+            'model': 'company.company',
+        },
         'SUPPLIERKEY': {
             'name': 'Supplier API key',
             'description': 'Place here your key for the suppliers API',
@@ -60,10 +65,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_custom_panels(self, view, request):
         panels = []
 
-        Supplier=Company.objects.get(name='Mouser')
+        SupplierPK=int(self.get_setting('MOUSER_PK'))
         if isinstance(view, PurchaseOrderDetail):
             order=view.get_object()
-            if order.supplier.pk==Supplier.pk:
+            if order.supplier.pk==SupplierPK:
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
@@ -145,7 +150,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         self.Data=[]
         Total=0
         Order=PurchaseOrder.objects.filter(id=pk).all()[0]
-        if Order.supplier.name  != 'Mouser':
+        if Order.supplier.pk  != int(self.get_setting('MOUSER_PK')):
             self.Message='Supplier of this order is not Mouser'
             return HttpResponse(f'Error')
         for item in Order.lines.all():
