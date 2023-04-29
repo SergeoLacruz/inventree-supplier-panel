@@ -1,6 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-# The invenTree-supplier-panel
+# The InvenTree-supplier-panel
 
 This is a plugin for [InvenTree](https://inventree.org), which translates a purchase order
 into a Mouser shopping cart. After using this plugin you can directly order the shopping
@@ -28,7 +28,7 @@ pip install git+https://github.com/SergeoLacruz/inventree-supplier-panel
 ## Configuration 
 ### Mouser Supplier ID
 Place here the primary key of the supplier Mouser in your system. You can select from a list of
-our suppliers.
+your suppliers.
 
 ### Supplier API key
 Place here you Mouser key for manipulating shopping carts. 
