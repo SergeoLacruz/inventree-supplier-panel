@@ -44,7 +44,9 @@ In case you need to authorise a proxy server between your InvenTree server and t
 put the required setting here. The argument for the request is {'Proxy CON' : 'Proxy URL'} for
 example: 
 
-~~~{ 'https' : 'https://user:password@ipaddress:port' }~~~
+```
+{ 'https' : 'https://user:password@ipaddress:port' }
+```
 
 If you do not need this just leave Proxy CON empty. 
 
@@ -77,18 +79,22 @@ In addition the current user must have change, add or delete access to purchase 
 
 ## How it works
 
-```def get_custom_panels(self, view, request)```
+```
+def get_custom_panels(self, view, request)
+```
 
 This defines the panel. The function must return a panels list. Here it return just one 
-panel. The panel is returned under two contitions: The view must be PurchaseOrderDetail 
-and the supplier must be Mouser. 
+panel. The panel is returned under three conditions: The view must be PurchaseOrderDetail, 
+the supplier must be Mouser and the user must have edit permissions to purchase orders. 
 The content_template is an html file that defines how the panel content looks. 
 
-```def get_custom_panels(self, view, request)```
+```
+def get_custom_panels(self, view, request)
+```
 Here we define the url that controls the panel. Let's look at the details here:
 
-- ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
-come to that later when we discuss the template.
+- ``` name='transfer-cart' ```: This is the name under which the url is called from the html file. We will
+come to that later when we discuss the template. 
 
 - ```self.TransferCart``` is the function that is called. It is defined later in this plugin
 
@@ -101,7 +107,7 @@ number with n digits.
 ### Mouser messed up
 It can happen that the Mouser shopping cart API gets messed up and no item are added into
 your cart. Just delete the cart in that case and delete the key in the plugin setting.
-A new key will be created and usually works. 
+A new key will be created and usually works.  
 
 ### API keys are global
 The API keys and especially the proxy password are user specific and shall not be given to 
