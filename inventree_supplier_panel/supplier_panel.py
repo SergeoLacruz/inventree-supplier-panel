@@ -7,6 +7,7 @@ from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
 from company.models import Company
 from inventree_supplier_panel.version import PLUGIN_VERSION
+from users.models import check_user_role
 import requests
 import json
 
@@ -21,7 +22,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Mouser Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2023-04-23T20:00:00"
+    PUBLISH_DATE = "2023-05-01T20:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a mouser shopping cart."
     VERSION = PLUGIN_VERSION
 
@@ -65,10 +66,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_custom_panels(self, view, request):
         panels = []
 
-        SupplierPK=int(self.get_setting('MOUSER_PK'))
         if isinstance(view, PurchaseOrderDetail):
+            SupplierPK=int(self.get_setting('MOUSER_PK'))
             order=view.get_object()
-            if order.supplier.pk==SupplierPK:
+            HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or 
+                           check_user_role(view.request.user, 'purchase_order','delete') or
+                           check_user_role(view.request.user, 'purchase_order','add'))
+            if order.supplier.pk==SupplierPK and HasPermission:
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',

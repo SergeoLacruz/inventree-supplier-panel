@@ -4,7 +4,7 @@
 
 This is a plugin for [InvenTree](https://inventree.org), which translates a purchase order
 into a Mouser shopping cart. After using this plugin you can directly order the shopping
-cart on the Mouser WEB page. J You need to have a Mouser account  and a Mouser API key. 
+cart on the Mouser WEB page. You need to have a Mouser account and a Mouser API key. 
 The shopping cart will be created in your Mouser account.
 
 ## Prerequisites
@@ -44,7 +44,7 @@ In case you need to authorise a proxy server between your InvenTree server and t
 put the required setting here. The argument for the request is {'Proxy CON' : 'Proxy URL'} for
 example: 
 
-```{ 'https' : 'https://user:password@ipaddress:port' }```
+~~~{ 'https' : 'https://user:password@ipaddress:port' }~~~
 
 If you do not need this just leave Proxy CON empty. 
 
@@ -71,6 +71,9 @@ in your PO.
 The plugin also transfers your IPNs (internal part numbers). Mouser reserves a field 
 for such numbers. They show up in your shopping cart as well as on the invoice and even
 on the labels that they put onto the bags and reels. 
+
+The panel is only displayed when the supplier of the current purchase order is Mouser.
+In addition the current user must have change, add or delete access to purchase orders. 
 
 ## How it works
 
