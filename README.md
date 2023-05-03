@@ -74,6 +74,11 @@ The plugin also transfers your IPNs (internal part numbers). Mouser reserves a f
 for such numbers. They show up in your shopping cart as well as on the invoice and even
 on the labels that they put onto the bags and reels. 
 
+Finally the prices that come with the Mouser shopping cart will be copied back into your
+InvenTree purchase order line items. So you can always see what you payed for the part when
+you ordered it. This does not modify the price breaks of the supplier part. These are stored
+with the supplier part. Here we just modify the purchase order. 
+
 The panel is only displayed when the supplier of the current purchase order is Mouser.
 In addition the current user must have change, add or delete access to purchase orders. 
 
@@ -93,7 +98,7 @@ def get_custom_panels(self, view, request)
 ```
 Here we define the url that controls the panel. Let's look at the details here:
 
-- ``` name='transfer-cart' ```: This is the name under which the url is called from the html file. We will
+- ```name='transfer-cart'```: This is the name under which the url is called from the html file. We will
 come to that later when we discuss the template. 
 
 - ```self.TransferCart``` is the function that is called. It is defined later in this plugin
@@ -114,12 +119,6 @@ The API keys and especially the proxy password are user specific and shall not b
 others. Up to now there are no user specific settings in InvenTree. So these keys are global
 and visible to, at least every admin. All users who use the plugin will have the same
 keys. We use a team key to solve this.
-
-### Prices
-The prices and the total will differ between the Mouser shopping cart and your InvenTree PO.
-The prices in the Mouser shopping cart are valid because these values get downloaded every time
-you push the button. The prices in you InvenTree database might be out of date. Additionally
-no price will be entered into the InvenTree PO when you add parts from the allocate stock table. 
 
 ### Other suppliers
 Actually this works only for Mouser. Other suppliers like Digikey, Farnell or Buerklin

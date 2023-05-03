@@ -185,4 +185,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                               })
         self.Total=CartData['MerchandiseTotal']
         self.Message=str(Response.status_code)+' '+Response.error_type
+        # Now we transfer the actual prices back into the PO
+        for POItem in Order.lines.all():
+            for MouserItem in self.Data:
+                if POItem.part.part.IPN==MouserItem['IPN']:
+                    POItem.purchase_price=MouserItem['price']
+                    POItem.save()
         return HttpResponse(f'OK')
