@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import setuptools
-from inventree_supplier.version import PLUGIN_VERSION
+from inventree_supplier_panel.version import PLUGIN_VERSION
 
 
 with open('README.md', encoding='utf-8') as f:
