@@ -67,7 +67,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         panels = []
 
         if isinstance(view, PurchaseOrderDetail):
-            SupplierPK=int(self.get_setting('MOUSER_PK'))
+            try:
+                SupplierPK=int(self.get_setting('MOUSER_PK'))
+            except:
+                raise ValueError('MOUSER_PK in inventree_supplier_panel not properly set. Please check settings')       
+                return panels
             order=view.get_object()
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or 
                            check_user_role(view.request.user, 'purchase_order','delete') or

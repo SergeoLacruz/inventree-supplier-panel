@@ -28,7 +28,7 @@ pip install git+https://github.com/SergeoLacruz/inventree-supplier-panel
 ## Configuration 
 ### Mouser Supplier ID
 Place here the primary key of the supplier Mouser in your system. You can select from a list of
-your suppliers.
+your suppliers. If this is not set the panel will not be displayed and a error is raised.
 
 ### Supplier API key
 Place here you Mouser key for manipulating shopping carts. 
