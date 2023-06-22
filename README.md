@@ -94,7 +94,7 @@ the supplier must be Mouser and the user must have edit permissions to purchase 
 The content_template is an html file that defines how the panel content looks. 
 
 ```
-def get_custom_panels(self, view, request)
+url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
 ```
 Here we define the url that controls the panel. Let's look at the details here:
 
@@ -104,9 +104,17 @@ come to that later when we discuss the template.
 - ```self.TransferCart``` is the function that is called. It is defined later in this plugin
 
 - ```transfercart/(?P<pk>\d+)/``` The string that looks a bit like white noise defines the url. transfercart
-ist the url togehter with the slug. The ? is well known for parameters. In this case we get just one 
+is the url which can be chosen freely. The ? is well known for parameters. In this case we get just one 
 parameter, the orders primary key. \d+ is a regular expression that limits the parameters to a digital
 number with n digits. 
+
+May be it is worth to leave a few more words on this. We define the url of the plugin. This is called by the Javascript
+function when we push the button. Let's have a look on the names and how they belong together:
+
+![Dataflow](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/plugin_dataflow.png)
+
+In the picture you see the relevant lines in the python and java code. The names in the coloured boxes need to match. 
+In case something does not fit the panel will not render and you will get an error message. 
 
 ## Issues
 ### Mouser messed up
