@@ -17,6 +17,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     Message=''
     Data=[]
     Total=0
+    PurchaseOrderPK=0
 
     NAME = "SupplierCart"
     SLUG = "suppliercart"
@@ -77,6 +78,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                            check_user_role(view.request.user, 'purchase_order','delete') or
                            check_user_role(view.request.user, 'purchase_order','add'))
             if order.supplier.pk==SupplierPK and HasPermission:
+                if (order.pk != self.PurchaseOrderPK):
+                    self.Data=[]
+                    self.Message=''
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
@@ -157,6 +161,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         CartItems=[]
         self.Data=[]
         Total=0
+        self.PurchaseOrderPK=int(pk)
         Order=PurchaseOrder.objects.filter(id=pk).all()[0]
         if Order.supplier.pk  != int(self.get_setting('MOUSER_PK')):
             self.Message='Supplier of this order is not Mouser'
