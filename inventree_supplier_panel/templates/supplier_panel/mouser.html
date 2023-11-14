@@ -11,15 +11,18 @@ async function JTransferCart(){
 <span class='fas fa-redo-alt'></span> {% trans "Transfer PO" %}
 </button>
 
-{% if plugin.Message == "200 OK" %}
+{% if plugin.ErrorCode == "200" %}
 	<div class='alert alert-block alert-info'>
-	{{ plugin.Message }}
+	{{ plugin.ErrorCode }} {{ plugin.Message }}
 	</div>
 {% else %}
 	<div class='alert alert-block alert-danger'>
-	{{ plugin.Message }}
+	{{ plugin.ErrorCode }} {{ plugin.Message }}
 	</div>
 {% endif %}
+
+Created Mouser shopping cart Key: {{ plugin.CartKey }}
+<br>
 
 <table class='table table-condensed'>
 <thead>
@@ -53,6 +56,16 @@ async function JTransferCart(){
     {% endfor %}
 </tbody>
 <tfoot>
+    <tr>
+	<td> {% trans "Total" %} </td>
+	<td> </td>
+	<td> </td>
+	<td> </td>
+	<td> </td>
+	<td> </td>
+	<td align="right"> {{ plugin.Total|floatformat:4 }} </td>
+	<td> </td>
+    </tr>
     <tr>
 	<td> {% trans "Total" %} </td>
 	<td> </td>

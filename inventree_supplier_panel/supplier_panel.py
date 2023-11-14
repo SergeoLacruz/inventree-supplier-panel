@@ -15,6 +15,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     # Define data that is displayed on the panel
     Message=''
+    ErrorCode=''
+    CartKey=''
     Data=[]
     Total=0
     PurchaseOrderPK=0
@@ -23,7 +25,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Mouser Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2023-05-01T20:00:00"
+    PUBLISH_DATE = "2023-11-14T20:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a mouser shopping cart."
     VERSION = PLUGIN_VERSION
 
@@ -36,10 +38,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         'SUPPLIERKEY': {
             'name': 'Supplier API key',
             'description': 'Place here your key for the suppliers API',
-        },
-        'CARTKEY': {
-            'name': 'Supplier shopping cart key',
-            'description': 'Place here your key for the shopping cart',
         },
         'PROXY_CON': {
             'name': 'Proxy CON',
@@ -69,7 +67,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
         if isinstance(view, PurchaseOrderDetail):
             try:
-                SupplierPK=int(self.get_setting('MOUSER_PK'))
+                MouserPK=int(self.get_setting('MOUSER_PK'))
             except:
                 raise ValueError('MOUSER_PK in inventree_supplier_panel not properly set. Please check settings')       
                 return panels
@@ -77,10 +75,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or 
                            check_user_role(view.request.user, 'purchase_order','delete') or
                            check_user_role(view.request.user, 'purchase_order','add'))
-            if order.supplier.pk==SupplierPK and HasPermission:
+            if order.supplier.pk==MouserPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
                     self.Data=[]
-                    self.Message=''
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
@@ -117,10 +114,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 #------------------------- UpdateSupplierCart ----------------------------------
 # Sends the PO data to the supplier and gets back the result.
 
-    def UpdateSupplierCart(self, Data):
+    def UpdateSupplierCart(self, Data, CartKey):
         cart={
-          "CartKey": self.get_setting('CARTKEY'),
-          "CartItems":Data
+          "CartKey": CartKey,
+          "CartItems": Data
         }
         Path= 'https://api.mouser.com/api/v001/cart'
         Response=self.SendRequest(cart,Path)
@@ -151,13 +148,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # This is called when the button is pressed. 
 
     def TransferCart(self,request,pk):
-        if self.get_setting('CARTKEY') == '':
-            Response=self.CreateCartKey()
-            if Response.status_code != 200:
-                self.Message=str(Response.status_code)+' '+Response.error_type
-                return HttpResponse(f'Error')
-            CartKey=Response.json()['CartKey']
-            self.set_setting('CARTKEY',CartKey)
+        Response=self.CreateCartKey()
+        if Response.status_code != 200:
+            self.ErrorCode=str(Response.status_code)
+            try:
+                self.Message=CartData=Response.json()['Message']
+            except:
+                self.Message=str(Response)
+            return HttpResponse(f'Error')
+        self.CartKey=Response.json()['CartKey']
         CartItems=[]
         self.Data=[]
         Total=0
@@ -171,15 +170,18 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                               'Quantity':int(item.quantity),
                               'CustomerPartNumber':item.part.part.IPN})
             if item.part.SKU =='N/A':
+                self.ErrorCode=''
                 self.Message='Part '+item.part.part.IPN+' is not available at Mouser. Please remove from PO'
                 return HttpResponse(f'Error')
-        Response=self.UpdateSupplierCart(CartItems)
+        Response=self.UpdateSupplierCart(CartItems, self.CartKey)
         CartData=Response.json()
         if Response.status_code != 200:
-            self.Message=str(Response.status_code)+' '+Response.error_type
+            self.ErrorCode=str(Response.status_code)
+            self.Message=CartData=Response.json()['Message']
             return HttpResponse(f'Error')
         if CartData['Errors'] != []:
-            self.Message=str(Response.status_code)+' Cart Data Error'
+            self.ErrorCode=str(Response.status_code)
+            self.Message='Cart Data Error'
             return HttpResponse(f'Error')
         Status={False:'Depleted',True:'OK'}
         for CartItem in CartData['CartItems']:
@@ -193,7 +195,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                               'currency':CartData['CurrencyCode'],
                               })
         self.Total=CartData['MerchandiseTotal']
-        self.Message=str(Response.status_code)+' '+Response.error_type
+        self.ErrorCode=str(Response.status_code)
+        self.Message=Response.error_type
         # Now we transfer the actual prices back into the PO
         for POItem in Order.lines.all():
             for MouserItem in self.Data:
