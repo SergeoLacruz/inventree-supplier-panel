@@ -152,7 +152,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if Response.status_code != 200:
             self.ErrorCode=str(Response.status_code)
             try:
-                self.Message=CartData=Response.json()['Message']
+                self.Message=Response.json()['Message']
             except:
                 self.Message=str(Response)
             return HttpResponse(f'Error')
