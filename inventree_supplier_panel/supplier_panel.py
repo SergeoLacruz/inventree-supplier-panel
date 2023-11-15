@@ -25,7 +25,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Mouser Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2023-11-14T20:00:00"
+    PUBLISH_DATE = "2023-11-15T20:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a mouser shopping cart."
     VERSION = PLUGIN_VERSION
 
@@ -49,7 +49,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         },
     }
 
-# Create some help  
+# Create some help
     def get_settings_content(self, request):
         return """
         <p>Setup:</p>
@@ -59,6 +59,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         <li>Enable the plugin</li>
         <li>Put keys into settings</li>
         <li>Enjoy</li>
+        <li>Remove the shopping carts regularly from your Mouser account</li>
         """
 
 # Create the panel that will display on the PurchaseOrder view,
@@ -69,10 +70,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             try:
                 MouserPK=int(self.get_setting('MOUSER_PK'))
             except:
-                raise ValueError('MOUSER_PK in inventree_supplier_panel not properly set. Please check settings')       
+                raise ValueError('MOUSER_PK in inventree_supplier_panel not properly set. Please check settings')
                 return panels
             order=view.get_object()
-            HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or 
+            HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or
                            check_user_role(view.request.user, 'purchase_order','delete') or
                            check_user_role(view.request.user, 'purchase_order','add'))
             if order.supplier.pk==MouserPK and HasPermission:
@@ -81,7 +82,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
-                    'content_template': 'supplier_panel/mouser.html', 
+                    'content_template': 'supplier_panel/mouser.html',
                 })
         return panels
 
@@ -90,7 +91,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
         ]
 
-#------------------------- Helper functions ------------------------------------
+#------------------------------ SendRequest ------------------------------------
     def SendRequest(self, Cart, Path):
         if self.get_setting('PROXY_CON') != '':
             Proxies = {self.get_setting('PROXY_CON') : self.get_setting('PROXY_URL')}
@@ -124,10 +125,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(Response)
 
 #--------------------- CreateCartKey ---------------------------------------
-# If there is no CartKey in the settings we just send an insert request with
-# an empty CartKey string. The supplier creates a Cartkey in that case and sends
-# it back. Surprisingly the part doses not show up in the newly created cart. 
-# So there is no need to remove it. 
+# We just send an insert request with an empty CartKey string. The supplier
+# creates a Cartkey in that case and sends it back.
+# Surprisingly the part doses not show up in the newly created cart.
+# So there is no need to remove it.
 
     def CreateCartKey(self):
         cart={
@@ -143,9 +144,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         Response=self.SendRequest(cart,Path)
         return(Response)
 
-#------------------------ Interface functions start here --------------------
-#---------------------------- TransferCart ---------------------------------------    
-# This is called when the button is pressed. 
+#---------------------------- TransferCart ---------------------------------------
+# This is called when the button is pressed and does most of the work.
 
     def TransferCart(self,request,pk):
         Response=self.CreateCartKey()
@@ -154,7 +154,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             try:
                 self.Message=Response.json()['Message']
             except:
-                self.Message=str(Response)
+                self.Message=Response.error_type
             return HttpResponse(f'Error')
         self.CartKey=Response.json()['CartKey']
         CartItems=[]
@@ -166,7 +166,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.Message='Supplier of this order is not Mouser'
             return HttpResponse(f'Error')
         for item in Order.lines.all():
-            CartItems.append({'MouserPartNumber':item.part.SKU, 
+            CartItems.append({'MouserPartNumber':item.part.SKU,
                               'Quantity':int(item.quantity),
                               'CustomerPartNumber':item.part.part.IPN})
             if item.part.SKU =='N/A':
@@ -197,6 +197,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         self.Total=CartData['MerchandiseTotal']
         self.ErrorCode=str(Response.status_code)
         self.Message=Response.error_type
+
         # Now we transfer the actual prices back into the PO
         for POItem in Order.lines.all():
             for MouserItem in self.Data:
