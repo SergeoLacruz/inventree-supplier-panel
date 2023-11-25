@@ -47,7 +47,10 @@ put the required setting here. Example:
 https://user:password@ipaddress:port
 ```
 
-If you do not need this just leave Proxy CON empty.
+If you do not need this just leave the fields empty.
+
+A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The 
+values in the environment variables overwrite Inventree settings.
 
 ## What it does
 
