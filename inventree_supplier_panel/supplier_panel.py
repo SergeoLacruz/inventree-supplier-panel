@@ -10,6 +10,7 @@ from inventree_supplier_panel.version import PLUGIN_VERSION
 from users.models import check_user_role
 import requests
 import json
+import os
 
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
@@ -93,7 +94,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 #------------------------------ SendRequest ------------------------------------
     def SendRequest(self, Cart, Path):
-        if self.get_setting('PROXY_CON') != '':
+
+        proxy_con= os.getenv('PROXY_CON')
+        proxy_url= os.getenv('PROXY_URL')
+        if proxy_con and proxy_url:
+            Proxies = {proxy_con : proxy_url}
+        elif self.get_setting('PROXY_CON') != '' and self.get_setting('PROXY_URL') != '':
             Proxies = {self.get_setting('PROXY_CON') : self.get_setting('PROXY_URL')}
         else:
             Proxies = {}
