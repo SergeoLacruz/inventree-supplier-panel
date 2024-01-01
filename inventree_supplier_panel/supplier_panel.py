@@ -207,7 +207,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         # Now we transfer the actual prices back into the PO
         for POItem in Order.lines.all():
             for MouserItem in self.Data:
-                if POItem.part.part.IPN==MouserItem['IPN']:
+                if POItem.part.SKU==MouserItem['SKU']:
                     POItem.purchase_price=MouserItem['price']
                     POItem.save()
         return HttpResponse(f'OK')
