@@ -36,9 +36,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'description': 'Primary key of the Mouser supplier',
             'model': 'company.company',
         },
-        'SUPPLIERKEY': {
-            'name': 'Supplier API key',
-            'description': 'Place here your key for the suppliers API',
+        'MOUSERKEY': {
+            'name': 'Mouser API key',
+            'description': 'Place here your key for the Mouser API',
         },
         'PROXY_CON': {
             'name': 'Proxy CON',
@@ -105,7 +105,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             Proxies = {}
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
         try:
-            Response=requests.post(Path+'?apiKey='+self.get_setting('SUPPLIERKEY')+'&countryCode=DE',
+            Response=requests.post(Path+'?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE',
                     verify=False,
                     proxies=Proxies,
                     data=json.dumps(Cart),
