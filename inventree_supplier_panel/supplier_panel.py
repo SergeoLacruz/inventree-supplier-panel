@@ -1,5 +1,6 @@
 from django.conf.urls import url
 from django.http import HttpResponse
+from django.urls import re_path
 
 from order.views import PurchaseOrderDetail
 from order.models import PurchaseOrder
@@ -36,9 +37,30 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'description': 'Primary key of the Mouser supplier',
             'model': 'company.company',
         },
+        'DIGIKEY_PK': {
+            'name': 'Digikey Supplier ID',
+            'description': 'Primary key of the Digikey supplier',
+            'model': 'company.company',
+        },
         'MOUSERKEY': {
             'name': 'Mouser API key',
             'description': 'Place here your key for the Mouser API',
+        },
+        'DIGIKEY_CLIENT_ID': {
+            'name': 'Digikey ID',
+            'description': 'Client ID for Digikey',
+        },
+        'DIGIKEY_CLIENT_SECRET': {
+            'name': 'Digikey Secret',
+            'description': 'Client secret for Digikey',
+        },
+        'DIGIKEY_TOKEN': {
+            'name': 'Digikey token',
+            'description': 'Token for Digikey',
+        },
+        'DIGIKEY_REFRESH_TOKEN': {
+            'name': 'Digikey refresh token',
+            'description': 'Refresh token Digikey',
         },
         'PROXY_CON': {
             'name': 'Proxy CON',
@@ -68,16 +90,20 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         panels = []
 
         if isinstance(view, PurchaseOrderDetail):
+            self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
             try:
-                MouserPK=int(self.get_setting('MOUSER_PK'))
+                self.MouserPK=int(self.get_setting('MOUSER_PK'))
             except:
-                raise ValueError('MOUSER_PK in inventree_supplier_panel not properly set. Please check settings')
+                return panels
+            try:
+                self.DigikeyPK=int(self.get_setting('DIGIKEY_PK'))
+            except:
                 return panels
             order=view.get_object()
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or
                            check_user_role(view.request.user, 'purchase_order','delete') or
                            check_user_role(view.request.user, 'purchase_order','add'))
-            if order.supplier.pk==MouserPK and HasPermission:
+            if order.supplier.pk==self.MouserPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
                     self.Data=[]
                 panels.append({
@@ -85,10 +111,19 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     'icon': 'fa-user',
                     'content_template': 'supplier_panel/mouser.html',
                 })
+            if order.supplier.pk==self.DigikeyPK and HasPermission:
+                if (order.pk != self.PurchaseOrderPK):
+                    self.Data=[]
+                panels.append({
+                    'title': 'Digikey Actions',
+                    'icon': 'fa-user',
+                    'content_template': 'supplier_panel/digikey.html',
+                })
         return panels
 
     def setup_urls(self):
         return [
+            re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
             url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
         ]
 
@@ -130,13 +165,25 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         Response=self.SendRequest(cart,Path)
         return(Response)
 
-#--------------------- CreateCartKey ---------------------------------------
-# We just send an insert request with an empty CartKey string. The supplier
+#--------------------- create_cart ---------------------------------------
+# This is just a wrapper that selects the proper creation function base
+# on the supplier. 
+
+    def create_cart(self, supplier_pk):
+        if supplier_pk==self.MouserPK:
+            response=self.create_mouser_cart()
+        elif supplier_pk==self.DigikeyPK:
+            response=self.create_digikey_cart()
+        else:
+            respone=None
+        return(response)
+
+# For Mouser we send an insert request with an empty CartKey string. Mouser 
 # creates a Cartkey in that case and sends it back.
 # Surprisingly the part doses not show up in the newly created cart.
 # So there is no need to remove it.
 
-    def CreateCartKey(self):
+    def create_mouser_cart(self):
         cart={
           "CartKey": '',
           "CartItems":[
@@ -150,11 +197,20 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         Response=self.SendRequest(cart,Path)
         return(Response)
 
+# Digikey does not have a cart API. So we create a list using the MyLists API
+# the list can easily be converted to a shipping cart in the WEB UI of Digikey
+
+    def create_digikey_cart(self):
+        print('Digikeyllllllllllllllllll')
+        return(None)
+
 #---------------------------- TransferCart ---------------------------------------
 # This is called when the button is pressed and does most of the work.
 
     def TransferCart(self,request,pk):
-        Response=self.CreateCartKey()
+        self.PurchaseOrderPK=int(pk)
+        Order=PurchaseOrder.objects.filter(id=pk).all()[0]
+        Response=self.create_cart(Order.supplier.pk)
         if Response.status_code != 200:
             self.ErrorCode=str(Response.status_code)
             try:
@@ -166,11 +222,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         CartItems=[]
         self.Data=[]
         Total=0
-        self.PurchaseOrderPK=int(pk)
-        Order=PurchaseOrder.objects.filter(id=pk).all()[0]
-        if Order.supplier.pk  != int(self.get_setting('MOUSER_PK')):
-            self.Message='Supplier of this order is not Mouser'
-            return HttpResponse(f'Error')
         for item in Order.lines.all():
             CartItems.append({'MouserPartNumber':item.part.SKU,
                               'Quantity':int(item.quantity),
@@ -211,3 +262,34 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     POItem.purchase_price=MouserItem['price']
                     POItem.save()
         return HttpResponse(f'OK')
+
+#---------------------------- receive_authcode ---------------------------------------
+    def receive_authcode(self, request):
+        auth_code = request.GET.get('code')
+        print("Received auth code", auth_code)
+
+        url = 'https://api.digikey.com/v1/oauth2/token'
+        url_data = {
+            'code': auth_code,
+            'client_id': self.get_setting('DIGIKEY_CLIENT_ID'),
+            'client_secret': self.get_setting('DIGIKEY_CLIENT_SECRET'),
+            'redirect_uri': 'https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/',
+            'grant_type': 'authorization_code'
+        }
+        response = requests.post(url, data=url_data)
+        if response.status_code == 200:
+            print('\033[32mAccess Token get SUCCESS\033[0m')
+            token={}
+            response_data = response.json()
+            token['access_token'] = response_data['access_token']
+            token['refresh_token'] = response_data['refresh_token']
+            token['expires_in'] = response_data['expires_in']
+            token['token_type'] = response_data['token_type']
+            self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
+            self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
+        else:
+            print('Access Token failed')
+            print(response.status_code)
+            print(response.content)
+        return HttpResponse(f'OK')
+
