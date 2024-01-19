@@ -18,7 +18,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     # Define data that is displayed on the panel
     Message=''
     ErrorCode=''
-    Data=[]
     Total=0
     PurchaseOrderPK=0
 
@@ -104,7 +103,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                            check_user_role(view.request.user, 'purchase_order','add'))
             if order.supplier.pk==self.MouserPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
-                    self.Data=[]
+                    #self.Data=[]
+                    pass
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
@@ -112,7 +112,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 })
             if order.supplier.pk==self.DigikeyPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
-                    self.Data=[]
+                    #self.Data=[]
+                    pass
                 panels.append({
                     'title': 'Digikey Actions',
                     'icon': 'fa-user',
@@ -430,7 +431,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.Message=cart_data['message']
             return HttpResponse(f'Error')
         CartItems=[]
-        self.Data=[]
         Total=0
         for item in Order.lines.all():
             CartItems.append({'MouserPartNumber':item.part.SKU,
@@ -440,7 +440,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 self.ErrorCode=''
                 self.Message='Part '+item.part.part.IPN+' is not available at Mouser. Please remove from PO'
                 return HttpResponse(f'Error')
-        CartData=self.update_cart(Order.supplier.pk, CartItems, cart_data['ID'])
+        self.cart_content=self.update_cart(Order.supplier.pk, CartItems, cart_data['ID'])
 #        CartData=Response.json()
 #        if Response.status_code != 200:
 #            self.ErrorCode=str(Response.status_code)
@@ -450,27 +450,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 #            self.ErrorCode=str(Response.status_code)
 #            self.Message='Cart Data Error'
 #            return HttpResponse(f'Error')
-        Status={False:'Depleted',True:'OK'}
-        for CartItem in CartData['CartItems']:
-            self.Data.append({'PCS':CartItem['QuantityRequested'],
-                              'SKU':CartItem['SKU'],
-                              'IPN':CartItem['IPN'],
-                              'status':Status[CartItem['QuantityRequested'] <= CartItem['QuantityAvailable']],
-                              'price':CartItem['UnitPrice'],
-                              'total':CartItem['ExtendedPrice'],
-                              'available':CartItem['QuantityAvailable'],
-                              'currency':CartItem['CurrencyCode'],
-                              })
-
-        self.Total=CartData['MerchandiseTotal']
-        self.ErrorCode=str(CartData['StatusCode'])
-        self.Message=CartData['Message']
 
         # Now we transfer the actual prices back into the PO
         for POItem in Order.lines.all():
-            for MouserItem in self.Data:
-                if POItem.part.SKU==MouserItem['SKU']:
-                    POItem.purchase_price=MouserItem['price']
+            for Item in self.cart_content['CartItems']:
+                if POItem.part.SKU==Item['SKU']:
+                    POItem.purchase_price=Item['UnitPrice']
                     POItem.save()
         return HttpResponse(f'OK')
 
