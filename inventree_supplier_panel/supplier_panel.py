@@ -16,8 +16,6 @@ import os
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     # Define data that is displayed on the panel
-#    Message=''
-#    ErrorCode=''
     PurchaseOrderPK=0
 
     NAME = "SupplierCart"
@@ -173,7 +171,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             Response.status_code = 500
         return(Response)
 #------------------------- update_cart ----------------------------------
-# Sends the PO data to the supplier and gets back the result.
+# Sends the PO data to the supplier and get back the result. We use a simple
+# wrapper that calls a dedicated sunction for each supplier. 
 
     def update_cart(self, order, cart_key):
         if order.supplier.pk==self.MouserPK:
@@ -183,6 +182,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         else:
             cart_data=None
         return(cart_data)
+
+# The Mouser part
+# Actually we do not send an empty CartKey. So Mouser creates a new key each time
+# the button is pressed. This should be improved in future. 
 
     def update_mouser_cart(self, order, CartKey):
         cart_items=[]
@@ -206,7 +209,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             return(shopping_cart)
         response=response.json()
         if response['Errors']!=[]:
-            shopping_cart={'status_code':'Mouser', 'message':response['Errors'][0]['Message']}
+            shopping_cart={'status_code':'Mouser answered: ', 'message':response['Errors'][0]['Message']}
             return(shopping_cart)
         cart_items=[]
         for p in response['CartItems']:
@@ -231,8 +234,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                   'ExtendedPrice':p['ExtendedPrice'],
                                   'Error':p['Errors'][0]['Message']
                                   })
-        total_price=response['MerchandiseTotal']
-        shopping_cart={'MerchandiseTotal':total_price,
+        shopping_cart={'MerchandiseTotal':response['MerchandiseTotal'],
                        'CartItems':cart_items,
                        'status_code':200,
                        'cart_key':response['CartKey'],
@@ -242,6 +244,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         order.metadata['MouserCartKey']=response['CartKey']
         order.save()
         return(shopping_cart)
+
+# The Digikey part
+# digikey has no shopping cart API. So we create a list using the MyLists API. 
+# The list can easily be transfered into an order in the web interface. 
 
     def update_digikey_cart(self, order, list_id):
         url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
@@ -406,6 +412,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             return(None)
         else:
             print('\033[31m\033[1mToken refreshed FAILED\033[0m')
+            print(response.status_code)
+            print(response.content)
             return(None)
 
 #---------------------------- receive_authcode ---------------------------------------
