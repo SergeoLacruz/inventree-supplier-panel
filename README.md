@@ -49,7 +49,7 @@ https://user:password@ipaddress:port
 
 If you do not need this just leave the fields empty.
 
-A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The 
+A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The
 values in the environment variables overwrite Inventree settings.
 
 ## What it does
@@ -67,7 +67,8 @@ The button initiates the transfer. It creates a Mouser shopping cart and takes e
 the Mouser supplier part and adds it into your shopping cart. When finished it downloads
 the shopping cart from the Mouser WEB page and puts the data into the table. Here you see
 the actual stock at Mouser and an OK bubble when the stock is large enough for you order.
-You also find the actual price as well as the total amount of your order.
+You also find the actual price as well as the total amount of your order. If Mouser
+detects an error with the part it is displayed in the very right column.
 
 The plugin also transfers your IPNs (internal part numbers). Mouser reserves a field
 for such numbers. They show up in your shopping cart as well as on the invoice and even
@@ -78,8 +79,16 @@ InvenTree purchase order line items. So you can always see what you payed for th
 you ordered it. This does not modify the price breaks of the supplier part. These are stored
 with the supplier part. Here we just modify the purchase order.
 
+The plugin creates a new chopping cart with a new ID each time the button is pressed. 
+If you afterwards create a real order in the WEB UI, be careful selecting the right one
+and delete all unused carts.
+
 The panel is only displayed when the supplier of the current purchase order is Mouser.
 In addition the current user must have change, add or delete access to purchase orders.
+
+## Digikey support
+The support of the supplier Digikey is still experimental. There are still some problems
+with proper handling of their MyLists API.
 
 ## How it works
 
