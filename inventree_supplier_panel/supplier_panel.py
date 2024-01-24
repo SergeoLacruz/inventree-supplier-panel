@@ -187,14 +187,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # Actually we do not send an empty CartKey. So Mouser creates a new key each time
 # the button is pressed. This should be improved in future. 
 
-    def update_mouser_cart(self, order, CartKey):
+    def update_mouser_cart(self, order, cart_key):
         cart_items=[]
         for item in order.lines.all():
             cart_items.append({'MouserPartNumber':item.part.SKU,
                               'Quantity':int(item.quantity),
                               'CustomerPartNumber':item.part.part.IPN})
         cart={
-          "CartKey": '',
+          "CartKey": cart_key,
           "CartItems": cart_items
         }
 #        url= 'https://api.mouser.com/api/v001/cart?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
@@ -241,7 +241,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                        'currency_code':response['CurrencyCode'],
                        'message':'Success'
                       }
-        order.metadata['MouserCartKey']=response['CartKey']
+#        order.metadata['MouserCartKey']=response['CartKey']
         order.save()
         return(shopping_cart)
 
@@ -258,81 +258,64 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'Content-Type':'application/json'
         }
         cart_items=[]
-
         for item in order.lines.all():
             cart_items.append({'RequestedPartNumber':item.part.SKU,
                               'Quantities': [{'Quantity': int(item.quantity)}],
                               'CustomerReference':item.part.part.IPN
                               })
         response=self.post_request(json.dumps(cart_items),url,header)
-        part_ids=response.json()
+        parts_in_list=self.get_parts_in_list(list_id)
         cart_items=[]
         merchandise_total=0
-        for p in part_ids:
-            response=self.get_part_info(list_id, p)
+        for p in parts_in_list['PartsList']:
             cart_items.append({
-                               'SKU':response['DigiKeyPartNumber'],
-                               'IPN':response['CustomerReference'],
-                               'QuantityRequested':response['Quantities'][0]['QuantityRequested'],
-                               'QuantityAvailable':response['QuantityAvailable'],
-                               'UnitPrice':response['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
-                               'ExtendedPrice':response['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
+                               'SKU':p['DigiKeyPartNumber'],
+                               'IPN':p['CustomerReference'],
+                               'QuantityRequested':p['Quantities'][0]['QuantityRequested'],
+                               'QuantityAvailable':p['QuantityAvailable'],
+                               'UnitPrice':p['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
+                               'ExtendedPrice':p['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
                                })
-            merchandise_total=merchandise_total+response['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
+            merchandise_total=merchandise_total+p['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
         shopping_cart={'MerchandiseTotal':merchandise_total,
                        'CartItems':cart_items,
                        'status_code':200,
-                       'cart_key':list_id,
+                       'cart_key':order.metadata['DigiKeyListName'],
                        'currency_code':'EUR',
                        'message':'Success',
                       }
-
         return(shopping_cart)
 
 
-    def get_part_info(self, list_id, part_id):
-        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/{part_id}?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
-        header = {
-            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-            'accept':'application/json'
-        }
-        response = self.get_request(url,  headers=header)
-        return(response.json())
+#    def get_part_info(self, list_id, part_id):
+#        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/{part_id}?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
+#        header = {
+#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+#            'accept':'application/json'
+#        }
+#        response = self.get_request(url,  headers=header)
+#        return(response.json())
 
 #--------------------- create_cart ---------------------------------------
-# This is just a wrapper that selects the proper creation function base
+# This is a wrapper that selects the proper creation function base
 # on the supplier. 
 
-    def create_cart(self, supplier_pk, reference):
-        if supplier_pk==self.MouserPK:
-            cart_data=self.create_mouser_cart()
-        elif supplier_pk==self.DigikeyPK:
-            cart_data=self.create_digikey_cart(reference)
+    def create_cart(self, order):
+        if order.supplier.pk==self.MouserPK:
+            cart_data=self.create_mouser_cart(order)
+        elif order.supplier.pk==self.DigikeyPK:
+            cart_data=self.create_digikey_cart(order)
         else:
             cart_data=None
         return(cart_data)
 
-    def create_mouser_cart(self):
+# This is just a dummy. We do not create a cart ID so far. It is automatically 
+# created by Mouser during item insertion. The return values are only for error
+# handling. 
+
+    def create_mouser_cart(self, order):
         cart_data={}
-#        cart={
-#          "CartKey": '',
-#          "CartItems":[
-#             {
-#               "MouserPartNumber": '595-6PAIC3104IRHBRQ1',
-#               "Quantity": 3000,
-#             }
-#          ]
-#        }
-#        url='https://api.mouser.com/api/v001/cart/items/insert?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
-#        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-#        response=self.post_request(json.dumps(cart),url,headers)
-#        if response.status_code != 200:
-#            cart_data={'status_code':response.status_code, 'message':response.error_type}
-#        else:
-#            cart_data['status_code']=response.status_code
-#            cart_data['ID']=response.json()['CartKey']
-#            cart_data['message']='success'
         cart_data['status_code']=200
         cart_data['ID']=''
         cart_data['message']='cc success'
@@ -342,18 +325,39 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # the list can easily be converted to a shopping cart  or a quote in the
 # WEB UI of Digikey
 
-    def create_digikey_cart(self, reference):
+    def create_digikey_cart(self, order):
         cart_data={}
+        try:
+            list_name = order.metadata['DigiKeyListName']
+        except:
+            list_name = order.reference + '-00'
+        version=int(list_name[len(list_name)-2:])+1
         self.refresh_digikey_access_token()
-        existing_lists=self.get_lists()
-        for l in existing_lists:
-            print('List:',l['ListName'],l['Id'],l['CreatedBy'],l['CompanyName'])
-            if l['ListName']==reference+'_5':
-                cart_data['status_code']=200
-                cart_data['ID']=l['Id']
-                cart_data['message']='success'
-                print('List already exists',cart_data)
-                return(cart_data)
+        list_name=order.reference + '-' + str(version).zfill(2)
+        i=version
+        while not self.check_valid_listname(list_name):
+            list_name=order.reference + '-' + str(i).zfill(2)
+            i=i+1
+            if i==10:
+                print('break')
+                return None
+        order.metadata['DigiKeyListName']=list_name
+        order.save()
+
+
+#        existing_lists=self.get_lists()
+#        for l in existing_lists:
+#            print('List:',l['ListName'],l['Id'],l['CreatedBy'],l['CompanyName'])
+#            if l['ListName']==order.reference+'_5':
+#                cart_data['status_code']=200
+#                cart_data['ID']=l['Id']
+#                cart_data['message']='success'
+#                print('List already exists',cart_data)
+#                response=self.get_parts_in_list(l['Id'])
+#                for p in response['PartsList']:
+#                    print('Deleting',p['UniqueId'])
+#                    self.delete_part_from_list(l['Id'],p['UniqueId'])
+#                return(cart_data)
 
         url = f'https://api.digikey.com/mylists/v1/lists'
         header = {
@@ -362,7 +366,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'Content-Type':'application/json'
         }
         url_data = {
-            'ListName': reference+'_5',
+            'ListName': list_name,
             'CreatedBy': 'Michael',
             'accept':'application/json'
         }
@@ -376,18 +380,48 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             cart_data['message']=response.json()['detail']
         return(cart_data)
 
-    def get_lists(self):
-        url = f'https://api.digikey.com/mylists/v1/lists?createdBy=Michael'
+#    def get_lists(self):
+#        url = f'https://api.digikey.com/mylists/v1/lists?createdBy=Michael'
+#        header = {
+#            'X-DIGIKEY-Locale-Site': 'DE',
+#            'X-DIGIKEY-Locale-Currency': 'EUR',
+#            'X-DIGIKEY-Customer-Id': '15353569',
+#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+#            'accept':'application/json'
+#        }
+#        response = self.get_request(url,  headers=header)
+#        return(response.json())
+
+    def get_parts_in_list(self, list_id):
+        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
+        print('url:',url)
         header = {
-            'X-DIGIKEY-Locale-Site': 'DE',
-            'X-DIGIKEY-Locale-Currency': 'EUR',
-            'X-DIGIKEY-Customer-Id': '15353569',
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'accept':'application/json'
         }
         response = self.get_request(url,  headers=header)
         return(response.json())
+
+#    def delete_part_from_list(self, list_id, part_id):
+#        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/{part_id}?createdBy=Michael'
+#        header = {
+#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+#            'accept':'application/json'
+#        }
+#        response = requests.delete(url,  headers=header)
+
+    def check_valid_listname(self, list_name):
+        url=f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=Michael'
+        header = {
+            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+            'accept':'application/json'
+        }
+        response = self.get_request(url,  headers=header)
+        return (response.content==b'true')
 
 #-------------------------- Here starts the digikey token stuff -----------------------------
     def refresh_digikey_access_token(self):
@@ -446,7 +480,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def TransferCart(self,request,pk):
         self.PurchaseOrderPK=int(pk)
         Order=PurchaseOrder.objects.filter(id=pk).all()[0]
-        cart_data=self.create_cart(Order.supplier.pk,Order.reference)
+        cart_data=self.create_cart(Order)
         if cart_data['status_code'] != 200:
             self.cart_content={}
             self.cart_content['status_code']=str(cart_data['status_code'])
