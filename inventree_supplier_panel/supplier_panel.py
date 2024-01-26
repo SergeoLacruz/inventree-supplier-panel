@@ -8,6 +8,7 @@ from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
 from company.models import Company
 from inventree_supplier_panel.version import PLUGIN_VERSION
+from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
 import requests
 import json
@@ -101,7 +102,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             if order.supplier.pk==self.MouserPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
                     self.cart_content=[]
-                    pass
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
@@ -110,7 +110,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             if order.supplier.pk==self.DigikeyPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
                     self.cart_content=[]
-                    pass
                 panels.append({
                     'title': 'Digikey Actions',
                     'icon': 'fa-user',
@@ -124,9 +123,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
         ]
 
-#------------------------- post and get_request wrappers -------------------------------
+#---------------------- post_request and get_request wrappers ---------------------------
     def post_request(self, post_data, path, headers):
-
         proxy_con= os.getenv('PROXY_CON')
         proxy_url= os.getenv('PROXY_URL')
         if proxy_con and proxy_url:
@@ -172,7 +170,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(Response)
 #------------------------- update_cart ----------------------------------
 # Sends the PO data to the supplier and get back the result. We use a simple
-# wrapper that calls a dedicated sunction for each supplier. 
+# wrapper that calls a dedicated sunction for each supplier.
 
     def update_cart(self, order, cart_key):
         if order.supplier.pk==self.MouserPK:
@@ -185,7 +183,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # The Mouser part
 # Actually we do not send an empty CartKey. So Mouser creates a new key each time
-# the button is pressed. This should be improved in future. 
+# the button is pressed. This should be improved in future.
 
     def update_mouser_cart(self, order, cart_key):
         cart_items=[]
@@ -241,13 +239,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                        'currency_code':response['CurrencyCode'],
                        'message':'Success'
                       }
-#        order.metadata['MouserCartKey']=response['CartKey']
-        order.save()
+
+        MetaAccess.set_value(order, self.NAME, 'MouserCartKey', response['CartKey'])
         return(shopping_cart)
 
 # The Digikey part
-# digikey has no shopping cart API. So we create a list using the MyLists API. 
-# The list can easily be transfered into an order in the web interface. 
+# digikey has no shopping cart API. So we create a list using the MyLists API.
+# The list can easily be transfered into an order in the web interface.
 
     def update_digikey_cart(self, order, list_id):
         url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
@@ -280,26 +278,26 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         shopping_cart={'MerchandiseTotal':merchandise_total,
                        'CartItems':cart_items,
                        'status_code':200,
-                       'cart_key':order.metadata['DigiKeyListName'],
+                       'cart_key': MetaAccess.get_value(order, self.NAME , 'DigiKeyListName'),
                        'currency_code':'EUR',
                        'message':'Success',
                       }
         return(shopping_cart)
 
-
-#    def get_part_info(self, list_id, part_id):
-#        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/{part_id}?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
-#        header = {
-#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-#            'accept':'application/json'
-#        }
-#        response = self.get_request(url,  headers=header)
-#        return(response.json())
+    def get_parts_in_list(self, list_id):
+        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
+        print('url:',url)
+        header = {
+            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+            'accept':'application/json'
+        }
+        response = self.get_request(url,  headers=header)
+        return(response.json())
 
 #--------------------- create_cart ---------------------------------------
 # This is a wrapper that selects the proper creation function base
-# on the supplier. 
+# on the supplier.
 
     def create_cart(self, order):
         if order.supplier.pk==self.MouserPK:
@@ -310,9 +308,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             cart_data=None
         return(cart_data)
 
-# This is just a dummy. We do not create a cart ID so far. It is automatically 
+# This is just a dummy. We do not create a cart ID so far. It is automatically
 # created by Mouser during item insertion. The return values are only for error
-# handling. 
+# handling.
 
     def create_mouser_cart(self, order):
         cart_data={}
@@ -323,13 +321,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # Digikey does not have a cart API. So we create a list using the MyLists API
 # the list can easily be converted to a shopping cart  or a quote in the
-# WEB UI of Digikey
+# WEB UI of Digikey. However the List API is not so simple the handle becase
+# all the list names are stored.
 
     def create_digikey_cart(self, order):
         cart_data={}
-        try:
-            list_name = order.metadata['DigiKeyListName']
-        except:
+        list_name = MetaAccess.get_value(order, self.NAME , 'DigiKeyListName')
+        if list_name == None:
             list_name = order.reference + '-00'
         version=int(list_name[len(list_name)-2:])+1
         token=self.refresh_digikey_access_token()
@@ -340,14 +338,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         list_name=order.reference + '-' + str(version).zfill(2)
         i=version
         while not self.check_valid_listname(list_name):
-            list_name=order.reference + '-' + str(i).zfill(2)
             i=i+1
-            if i==10:
-                print('break')
-                return None
-        order.metadata['DigiKeyListName']=list_name
-        order.save()
-
+            list_name=order.reference + '-' + str(i).zfill(2)
+            if i==version + 20:
+                cart_data['status_code']=0
+                cart_data['ID']=''
+                cart_data['message']='No valid list name found within 20 attempts'
+                return cart_data
+        MetaAccess.set_value(order, self.NAME , 'DigiKeyListName', list_name)
         url = f'https://api.digikey.com/mylists/v1/lists'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
@@ -364,22 +362,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             cart_data['status_code']=response.status_code
             cart_data['ID']=response.json()
             cart_data['message']='success'
+        elif response.status_code in [400,401]:
+            cart_data['status_code']=response.status_code
+            cart_data['ID']=''
+            cart_data['message']=response.json()['ErrorMessage'] + ' ' + response.json()['ErrorDetails']
         else:
             cart_data['status_code']=response.status_code
-            cart_data['message']=response.json()['detail']
+            cart_data['ID']=''
+            cart_data['message']='List creation failed'
         return(cart_data)
-
-    def get_parts_in_list(self, list_id):
-        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
-        print('url:',url)
-        header = {
-            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-            'accept':'application/json'
-        }
-        response = self.get_request(url,  headers=header)
-        return(response.json())
-
 
     def check_valid_listname(self, list_name):
         url=f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=Michael'
@@ -389,7 +380,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'accept':'application/json'
         }
         response = self.get_request(url,  headers=header)
-        return (response.content==b'true')
+        return(response.content==b'true')
 
 #-------------------------- Here starts the digikey token stuff -----------------------------
     def refresh_digikey_access_token(self):
@@ -433,7 +424,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 #---------------------------- receive_authcode ---------------------------------------
     def receive_authcode(self, request):
         auth_code = request.GET.get('code')
-
         url = 'https://api.digikey.com/v1/oauth2/token'
         url_data = {
             'code': auth_code,
@@ -449,11 +439,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             response_data = response.json()
             self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
             self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
+            return HttpResponse(f'OK')
         else:
-            print('Access Token failed')
-            print(response.status_code)
-            print(response.content)
-        return HttpResponse(f'OK')
+            print('\033[31m\033[1mReceive access token FAILED\033[0m')
+            return HttpResponse(response.content)
 
 #---------------------------- TransferCart ---------------------------------------
 # This is called when the button is pressed and does most of the work.
