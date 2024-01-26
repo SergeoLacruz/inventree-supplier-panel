@@ -332,7 +332,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         except:
             list_name = order.reference + '-00'
         version=int(list_name[len(list_name)-2:])+1
-        self.refresh_digikey_access_token()
+        token=self.refresh_digikey_access_token()
+        if token['status_code'] != 200:
+            cart_data['status_code']=token['status_code']
+            cart_data['message']=token['message']
+            return(cart_data)
         list_name=order.reference + '-' + str(version).zfill(2)
         i=version
         while not self.check_valid_listname(list_name):
@@ -343,21 +347,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 return None
         order.metadata['DigiKeyListName']=list_name
         order.save()
-
-
-#        existing_lists=self.get_lists()
-#        for l in existing_lists:
-#            print('List:',l['ListName'],l['Id'],l['CreatedBy'],l['CompanyName'])
-#            if l['ListName']==order.reference+'_5':
-#                cart_data['status_code']=200
-#                cart_data['ID']=l['Id']
-#                cart_data['message']='success'
-#                print('List already exists',cart_data)
-#                response=self.get_parts_in_list(l['Id'])
-#                for p in response['PartsList']:
-#                    print('Deleting',p['UniqueId'])
-#                    self.delete_part_from_list(l['Id'],p['UniqueId'])
-#                return(cart_data)
 
         url = f'https://api.digikey.com/mylists/v1/lists'
         header = {
@@ -380,19 +369,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             cart_data['message']=response.json()['detail']
         return(cart_data)
 
-#    def get_lists(self):
-#        url = f'https://api.digikey.com/mylists/v1/lists?createdBy=Michael'
-#        header = {
-#            'X-DIGIKEY-Locale-Site': 'DE',
-#            'X-DIGIKEY-Locale-Currency': 'EUR',
-#            'X-DIGIKEY-Customer-Id': '15353569',
-#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-#            'accept':'application/json'
-#        }
-#        response = self.get_request(url,  headers=header)
-#        return(response.json())
-
     def get_parts_in_list(self, list_id):
         url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
         print('url:',url)
@@ -404,14 +380,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         response = self.get_request(url,  headers=header)
         return(response.json())
 
-#    def delete_part_from_list(self, list_id, part_id):
-#        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/{part_id}?createdBy=Michael'
-#        header = {
-#            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-#            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-#            'accept':'application/json'
-#        }
-#        response = requests.delete(url,  headers=header)
 
     def check_valid_listname(self, list_name):
         url=f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=Michael'
@@ -437,18 +405,30 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'grant_type': 'refresh_token'
         }
         header={}
+        token={}
         response = self.post_request(url_data, url,  headers=header)
         if response.status_code == 200:
             print('\033[32mToken refresh SUCCESS\033[0m')
             response_data = response.json()
             self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
             self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
-            return(None)
+            token['status_code']=response.status_code
+            token['message']='success'
+            token['acces_token']=response_data['access_token']
+            token['refresh_token']=response_data['refresh_token']
+        elif response.status_code in [400,401]:
+            print('\033[31m\033[1mToken refreshed FAILED\033[0m')
+            token['status_code']=response.status_code
+            token['message']=response.json()['ErrorMessage'] + ' ' + response.json()['ErrorDetails']
+            token['acces_token']=''
+            token['refresh_token']=''
         else:
             print('\033[31m\033[1mToken refreshed FAILED\033[0m')
-            print(response.status_code)
-            print(response.content)
-            return(None)
+            token['status_code']=response.status_code
+            token['message']='Access token refrech failed'
+            token['acces_token']=''
+            token['refresh_token']=''
+        return(token)
 
 #---------------------------- receive_authcode ---------------------------------------
     def receive_authcode(self, request):
@@ -462,7 +442,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'redirect_uri': 'https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/',
             'grant_type': 'authorization_code'
         }
-        response = self.post_request(url, url_data)
+        header={}
+        response = self.post_request(url_data, url,  headers=header)
         if response.status_code == 200:
             print('\033[32mAccess Token get SUCCESS\033[0m')
             response_data = response.json()
