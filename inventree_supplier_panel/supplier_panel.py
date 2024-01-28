@@ -10,6 +10,8 @@ from company.models import Company
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
+
+from requests.exceptions import ConnectionError
 import requests
 import json
 import os
@@ -85,8 +87,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_custom_panels(self, view, request):
         panels = []
 
+        # Here is some work to do
         if isinstance(view, PurchaseOrderDetail):
-            self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
             try:
                 self.MouserPK=int(self.get_setting('MOUSER_PK'))
             except:
@@ -141,10 +143,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     timeout=5,
                     headers=headers)
             response.error_type = "OK"
-        except:
-            response=requests.models.Response()
-            response.error_type = "Connection Error"
-            response.status_code = 500
+        except Exception as e:
+            self.cart_content={'status_code': e.args,
+                              }
+            raise ConnectionError
+        if response.status_code != 200:
+            self.cart_content={'status_code': response.status_code,
+                               'message' : response.content
+                              }
+            raise ConnectionError
         return(response)
 
     def get_request(self, path, headers):
@@ -157,17 +164,22 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         else:
             Proxies = {}
         try:
-            Response=requests.get(path,
+            response=requests.get(path,
                     verify=False,
                     proxies=Proxies,
                     timeout=5,
                     headers=headers)
-            Response.error_type = "OK"
-        except:
-            Response=requests.models.Response()
-            Response.error_type = "Connection Error"
-            Response.status_code = 500
-        return(Response)
+        except Exception as e:
+            self.cart_content={'status_code': e.args,
+                              }
+            raise ConnectionError
+        if response.status_code != 200:
+            self.cart_content={'status_code': response.status_code,
+                               'message' : response.content
+                              }
+            raise ConnectionError
+        response.error_type = "OK"
+        return(response)
 #------------------------- update_cart ----------------------------------
 # Sends the PO data to the supplier and get back the result. We use a simple
 # wrapper that calls a dedicated sunction for each supplier.
@@ -199,12 +211,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         url='https://api.mouser.com/api/v001/cart/items/insert?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response=self.post_request(json.dumps(cart), url, header)
-        if response.status_code != 200:
-            shopping_cart={'status_code':response.status_code, 'message':'uc '+response.error_type}
-            return(shopping_cart)
-        if response.status_code == 401:
-            shopping_cart={'status_code':response.status_code, 'message':response.json()['Message']}
-            return(shopping_cart)
         response=response.json()
         if response['Errors']!=[]:
             shopping_cart={'status_code':'Mouser answered: ', 'message':response['Errors'][0]['Message']}
@@ -258,23 +264,35 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         cart_items=[]
         for item in order.lines.all():
             cart_items.append({'RequestedPartNumber':item.part.SKU,
-                              'Quantities': [{'Quantity': int(item.quantity)}],
-                              'CustomerReference':item.part.part.IPN
-                              })
+                               'Quantities': [{'Quantity': int(item.quantity)}],
+                               'CustomerReference':item.part.part.IPN
+                             })
         response=self.post_request(json.dumps(cart_items),url,header)
         parts_in_list=self.get_parts_in_list(list_id)
         cart_items=[]
         merchandise_total=0
         for p in parts_in_list['PartsList']:
-            cart_items.append({
-                               'SKU':p['DigiKeyPartNumber'],
-                               'IPN':p['CustomerReference'],
-                               'QuantityRequested':p['Quantities'][0]['QuantityRequested'],
-                               'QuantityAvailable':p['QuantityAvailable'],
-                               'UnitPrice':p['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
-                               'ExtendedPrice':p['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
-                               })
-            merchandise_total=merchandise_total+p['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
+            if p['DigiKeyPartNumber'] !='':
+                cart_items.append({
+                                   'SKU':p['DigiKeyPartNumber'],
+                                   'IPN':p['CustomerReference'],
+                                   'QuantityRequested':p['Quantities'][0]['QuantityRequested'],
+                                   'QuantityAvailable':p['QuantityAvailable'],
+                                   'UnitPrice':p['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
+                                   'ExtendedPrice':p['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
+                                   'Error':'',
+                                   })
+                merchandise_total=merchandise_total+p['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
+            else:
+                cart_items.append({
+                                   'SKU':p['RequestedPartNumber'],
+                                   'IPN':p['CustomerReference'],
+                                   'QuantityRequested':p['Quantities'][0]['QuantityRequested'],
+                                   'QuantityAvailable':p['QuantityAvailable'],
+                                   'UnitPrice':0,
+                                   'ExtendedPrice':0,
+                                   'Error':'Partnumber not found at Digikey',
+                                   })
         shopping_cart={'MerchandiseTotal':merchandise_total,
                        'CartItems':cart_items,
                        'status_code':200,
@@ -286,7 +304,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     def get_parts_in_list(self, list_id):
         url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
-        print('url:',url)
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
@@ -331,10 +348,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             list_name = order.reference + '-00'
         version=int(list_name[len(list_name)-2:])+1
         token=self.refresh_digikey_access_token()
-        if token['status_code'] != 200:
-            cart_data['status_code']=token['status_code']
-            cart_data['message']=token['message']
-            return(cart_data)
         list_name=order.reference + '-' + str(version).zfill(2)
         i=version
         while not self.check_valid_listname(list_name):
@@ -354,22 +367,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         }
         url_data = {
             'ListName': list_name,
-            'CreatedBy': 'Michael',
+            #            'CreatedBy': 'Michael',
             'accept':'application/json'
         }
         response = self.post_request(json.dumps(url_data), url,  headers=header)
-        if response.status_code == 200:
-            cart_data['status_code']=response.status_code
-            cart_data['ID']=response.json()
-            cart_data['message']='success'
-        elif response.status_code in [400,401]:
-            cart_data['status_code']=response.status_code
-            cart_data['ID']=''
-            cart_data['message']=response.json()['ErrorMessage'] + ' ' + response.json()['ErrorDetails']
-        else:
-            cart_data['status_code']=response.status_code
-            cart_data['ID']=''
-            cart_data['message']='List creation failed'
+        cart_data['status_code']=response.status_code
+        cart_data['ID']=response.json()
+        cart_data['message']='success'
         return(cart_data)
 
     def check_valid_listname(self, list_name):
@@ -398,27 +402,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         header={}
         token={}
         response = self.post_request(url_data, url,  headers=header)
-        if response.status_code == 200:
-            print('\033[32mToken refresh SUCCESS\033[0m')
-            response_data = response.json()
-            self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
-            self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
-            token['status_code']=response.status_code
-            token['message']='success'
-            token['acces_token']=response_data['access_token']
-            token['refresh_token']=response_data['refresh_token']
-        elif response.status_code in [400,401]:
-            print('\033[31m\033[1mToken refreshed FAILED\033[0m')
-            token['status_code']=response.status_code
-            token['message']=response.json()['ErrorMessage'] + ' ' + response.json()['ErrorDetails']
-            token['acces_token']=''
-            token['refresh_token']=''
-        else:
-            print('\033[31m\033[1mToken refreshed FAILED\033[0m')
-            token['status_code']=response.status_code
-            token['message']='Access token refrech failed'
-            token['acces_token']=''
-            token['refresh_token']=''
+        print('\033[32mToken refresh SUCCESS\033[0m')
+        response_data = response.json()
+        self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
+        self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
+        token['status_code']=response.status_code
+        token['message']='success'
+        token['acces_token']=response_data['access_token']
+        token['refresh_token']=response_data['refresh_token']
         return(token)
 
 #---------------------------- receive_authcode ---------------------------------------

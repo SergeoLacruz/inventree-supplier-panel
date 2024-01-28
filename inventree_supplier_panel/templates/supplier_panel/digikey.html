@@ -44,6 +44,7 @@ Created Digikey list : {{ plugin.cart_content.cart_key }}
 	<td> {% trans "Status" %} </td>
 	<td align="right"> {% trans "Price" %} </td>
 	<td align="right"> {% trans "Total" %} </td>
+	<td ></td>
     </tr>
 </thead>
 <tbody>
@@ -60,6 +61,7 @@ Created Digikey list : {{ plugin.cart_content.cart_key }}
 	{% endif %}
 	<td align="right"> {{ sub.UnitPrice|floatformat:4 }} </td>
 	<td align="right"> {{ sub.ExtendedPrice|floatformat:4 }} </td>
+	<td> {{ sub.Error }} </td>
     <tr>
     {% endfor %}
 </tbody>
