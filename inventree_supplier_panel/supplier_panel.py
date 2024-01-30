@@ -87,6 +87,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_custom_panels(self, view, request):
         panels = []
 
+        self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
         # Here is some work to do
         if isinstance(view, PurchaseOrderDetail):
             try:
