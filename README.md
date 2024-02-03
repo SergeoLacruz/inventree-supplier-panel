@@ -2,24 +2,14 @@
 
 # The InvenTree-supplier-panel
 
-This is a plugin for [InvenTree](https://inventree.org), which translates a purchase order
-into a Mouser shopping cart. After using this plugin you can directly order the shopping
-cart on the Mouser WEB page. You need to have a Mouser account and a Mouser API key.
-The shopping cart will be created in your Mouser account. Each time you transfer your PO
-a new shopping cart will be created. So make sure that you delete them from time to time in
-the mouser WEB interface.
-
-## Prerequisites
-
-For this plugin to work you need to have Mouser as a supplier in your InvenTree database.
-Supplierparts must be added to all the parts that you like to buy at Mouser. All Mouser supplier
-parts need to have the proper SKU. It needs to match the Mouser part number exactly.
-
-For access to the Mouser API you need a Mouser account and a shopping cart API key.
-You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
-key. This is different. If the key is properly set up you can find it on the Mouser
-WEB page here:
-![Mouser API](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_api.png)
+This is a plugin for [InvenTree](https://inventree.org), which uploads a purchase order
+to a supplier WEB page. After using this plugin you can directly order the parts on
+supplier WEB page. You need to have a supplier account and a different kinds of API keys
+depending on the supplier. 
+The data cart will be created in your supplier account. Each time you transfer your PO
+a new data set cart will be created. So make sure that you delete them from time to time in
+the supplier WEB interface.
+Actually the plugin supports two suppliers: Mouser and Digikey. 
 
 ## Installation
 
@@ -33,8 +23,19 @@ pip install git+https://github.com/SergeoLacruz/inventree-supplier-panel
 Place here the primary key of the supplier Mouser in your system. You can select from a list of
 your suppliers. If this is not set the panel will not be displayed and a error is raised.
 
-### Supplier API key
+### Digikey Supplier ID
+Place here the primary key of the supplier Digikey in your system. You can select from a list of
+your suppliers. If this is not set the panel will not be displayed and a error is raised.
+
+### Mouser API key
 Place here your Mouser key for manipulating shopping carts.
+
+### Digikey ID and Digikey Secret
+This is the client ID and the client secret that has been generated in the Digkey API admin WEB portal
+
+### Digikey token and Digikey refrech token
+These fields are filled automatically. The Digikey API requires two tokens with different life times.
+Please refer to the Digikey section for more information.
 
 ### Proxy CON
 Protocol to proxy server e.g. https
@@ -52,43 +53,120 @@ If you do not need this just leave the fields empty.
 A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The
 values in the environment variables overwrite Inventree settings.
 
-## What it does
+## What the plugin does
 
 The plugin creates a new panel which is visible on the purchase order details view.
-This is called Mouser actions. On the panel there are three things:
+This is called either Mouser actions or Digikey actions depeding on the supplier of the
+active PO. On the panel there are three things:
 
-- a button that starts the transfer of your PO to Mouser
+- a button that starts the transfer of your PO to the supplier
 - a status bar that shows error messages
 - a table that contains the created Mouser shopping cart.
+- in case of Digikey a button that initiates the token generation. 
 
 ![Mouser Panel](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_panel.png)
 
-The button initiates the transfer. It creates a Mouser shopping cart and takes each element of your PO using the SKU of
-the Mouser supplier part and adds it into your shopping cart. When finished it downloads
-the shopping cart from the Mouser WEB page and puts the data into the table. Here you see
-the actual stock at Mouser and an OK bubble when the stock is large enough for you order.
-You also find the actual price as well as the total amount of your order. If Mouser
+The button initiates the transfer. It takes each element of your PO using the SKU of
+the supplier part and transfers it to the suppliers WEB shop. When finished it downloads
+the data from the WEB page and puts the data into the table. Here you see
+the actual stock at the supplier and an OK bubble when the stock is large enough for you order.
+You also find the actual price as well as the total amount of your order. If the supplier
 detects an error with the part it is displayed in the very right column.
 
-The plugin also transfers your IPNs (internal part numbers). Mouser reserves a field
+The plugin also transfers your IPNs (internal part numbers). Most suppliers reserve a field
 for such numbers. They show up in your shopping cart as well as on the invoice and even
 on the labels that they put onto the bags and reels.
 
-Finally the prices that come with the Mouser shopping cart will be copied back into your
+Finally the actual prices are copied back into your
 InvenTree purchase order line items. So you can always see what you payed for the part when
 you ordered it. This does not modify the price breaks of the supplier part. These are stored
 with the supplier part. Here we just modify the purchase order.
 
-The plugin creates a new chopping cart with a new ID each time the button is pressed. 
-If you afterwards create a real order in the WEB UI, be careful selecting the right one
-and delete all unused carts.
-
 The panel is only displayed when the supplier of the current purchase order is Mouser.
 In addition the current user must have change, add or delete access to purchase orders.
 
-## Digikey support
-The support of the supplier Digikey is still experimental. There are still some problems
-with proper handling of their MyLists API.
+## Working with Mouser
+
+### Set up
+
+For this plugin to work you need to have Mouser as a supplier in your InvenTree database.
+Supplierparts must be added to all the parts that you like to buy at Mouser. All Mouser supplier
+parts need to have the proper SKU. It needs to match the Mouser part number exactly.
+
+For access to the Mouser API you need a Mouser account and a shopping cart API key.
+You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
+key. This is different. If the key is properly set up you can find it on the Mouser
+WEB page here:
+![Mouser API](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_api.png)
+
+### Usage
+Using Mouser is easy. Only the Mouser client ID is required for authentication. Its lifetime 
+is endless. Mouser has an API for the shopping cart. On pressing the button a shopping
+cart is crated and all items are put into this shopping cart. When you login to the
+Mouser WEB shop you can use this shopping cart for your order. 
+
+Please be aware that the plugin creates a new cart  with a new ID each time the button is pressed. 
+If you afterwards create a real in the WEB UI, be careful selecting the right one
+and delete all unused carts.
+
+## Working with Digikey
+
+### Set up 
+
+You need a registration on the [Digikey API products WEB page](https://developer.digikey.com). 
+This is not your normal Digikey account for shopping. You have to apply separately. After
+registration create an organisation and inside the organization a production app. 
+The most important thing to set is the OAuth Callback. This is an URL on your local server
+that is called by Digikey for token generation. The plugin creates an URL for this. 
+Just add your local IP. The entry should look like:
+
+```
+https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
+```
+
+In this example 192.168.1.40:8123 is the local IP address and ans port where my
+InvenTree development server runs. Place here the appropriate address. 
+In Production products section make sure that Product information and MyLists is activated.
+
+In the View tab of your app you find the Client-ID and the Client-Secret. Place those in
+the plugin settings. 
+
+### Usage 
+Using Digikey is more complex. The authorisation system is token based and they do not
+have a shopping cart API. Digikey Supplierparts have to by in your Inventree Database 
+as described already in the Mouser section. 
+
+#### Authorization
+The Digikey Client ID and the Client secret are the first things you need. With those 
+you call an API endpoint. You HAVE to go through an interactive browser window and 
+put in your credentials. Afterwards Digikey opens a callback URL on your local machine
+and transfers a key. With this key you have to call another API endpoint to create 
+a token and e refresh token. The key gets bad after 60 seconds. 
+
+The token is used for each call to a Digikey API. It is good for 30 minutes. It has to
+be refreshed using the refresh token. This one is valid for 90 days. 
+
+The plugin has a button in the panel that initiates the first step. It opens a browser
+where you put in your credentials. When the OAuth callback is properly set the URL
+...plugin/suppliercart/digikeytoken/ is called. This triggers a call to 
+https://api.digikey.com/v1/oauth2/token from where you get the tokens. The tokens 
+are stored in the plugin setting area. Do not change them manually. 
+
+Each time you transfer a PO the refresh token is called independently from the 
+tokens live time. This also refreshes the refresh token. So you are save when 
+you use the plugin ate least one in 90 days. In case the token gets bad you need to
+create a fresh set using the token button again. 
+
+If you are confused now read the documentation on the Digikey WEB page for more details. 
+
+#### MyLists
+
+Digikey does not have such a simple shopping cart API. The plugin uses the MyLists API.
+Here you create a list on the WEB shop that can easily be transferred to a shopping
+cart. When creating a list a list name has to be provided. The plugin creates a name
+based on the PO name and adding a -xx that counts upwards each time you push the button. 
+The reason is that each name is allowed only once. Even when the list is deleted, the
+name stays blocked forever. 
 
 ## How it works
 
@@ -131,3 +209,7 @@ The API keys and especially the proxy password are user specific and shall not b
 others. Up to now there are no user specific settings in InvenTree. So these keys are global
 and visible to, at least every admin. All users who use the plugin will have the same
 keys. We use a team key to solve this.
+
+###
+Digikey allows more features like customer ID and list users. These are not implelented so far. 
+The plugin supports just a single Digikey organization and user 
