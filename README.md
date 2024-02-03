@@ -52,12 +52,12 @@ https://user:password@ipaddress:port
 If you do not need this just leave the fields empty.
 
 A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The
-values in the environment variables overwrite Inventree settings.
+values in the environment variables overwrite InvenTree settings.
 
 ## What the plugin does
 
 The plugin creates a new panel which is visible on the purchase order details view.
-This is called either Mouser actions or Digikey actions depeding on the supplier of the
+This is called either Mouser actions or Digikey actions depending on the supplier of the
 active PO. On the panel there are three things:
 
 - a button that starts the transfer of your PO to the supplier
@@ -92,8 +92,8 @@ Supplierparts must be added to all the parts that you like to buy at Mouser. All
 parts need to have the proper SKU. It needs to match the Mouser part number exactly.
 
 For access to the Mouser API you need a Mouser account and a shopping cart API key.
-You can get this on the Mouser WEB page. Do not mess up with the Mouser search API
-key. This is different. If the key is properly set up you can find it on the Mouser
+You can get this in your Mouser WEB account. Do not mess up with the Mouser search API
+key. This is a different one. If the key is properly set up you can find it on the Mouser
 WEB page here:
 ![Mouser API](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_api.png)
 
@@ -122,14 +122,14 @@ Just add your local IP. The entry should look somehow like:
 https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
 ```
 
-In this example 192.168.1.40:8123 is the local IP address and and port where my
+In this example 192.168.1.40:8123 is the local IP address and port where my
 InvenTree development server runs. Place here the appropriate address. 
 In Production products section make sure that Product information and MyLists is activated.
 
 In the View tab of your app you find the Client-ID and the Client-Secret. Place those in
 the plugin settings. 
 
-Digikey Supplierparts have to by in your Inventree Database as described already in
+Digikey Supplierparts have to by in your InvenTree Database as described already in
 the Mouser section. 
 
 ### Usage 
@@ -166,7 +166,8 @@ It creates a list on the WEB shop that can easily be transferred to a shopping
 cart. When creating a list a list name has to be provided. The plugin creates a name
 based on the PO name and adding a -xx that counts upwards each time you push the button. 
 The reason is that each name is allowed only once. Even when the list is deleted, the
-name stays blocked forever. 
+name stays blocked forever. If you are done with your order delete the lists from your
+Digikey WEB account. 
 
 ## How it works
 
@@ -176,7 +177,7 @@ def get_custom_panels(self, view, request)
 
 This defines the panel. The function must return a panels list. Here it returns just one
 panel. The panel is returned under three conditions: The view must be PurchaseOrderDetail,
-the supplier must be Mouser and the user must have edit permissions to purchase orders.
+the supplier must be Mouser or Digikey and the user must have edit permissions to purchase orders.
 The content_template is an html file that defines how the panel content looks.
 
 ```
@@ -210,13 +211,14 @@ others. Up to now there are no user specific settings in InvenTree. So these key
 and visible to, at least every admin. All users who use the plugin will have the same
 keys. We use a team key to solve this.
 
-### DigiKey features
-Digikey allows more features like customer ID and list users. These are not implelented so far. 
-The plugin supports just a single Digikey organization and user 
+### Missing DigiKey features
+Digikey allows more features like customer ID and list owners. These are not implemented so far. 
+The plugin supports just a single Digikey organization and user. Some APIs require a createdBy
+value to be set. xxxx works fine so far. 
 
-### Callback
-The OAuto callback setting on the Digikey web page allpws only https. http is not allowed. 
-This is usually not a problem in production einvironments. However the development server
-usually runs http. Luckly Inventree has the required stuff on board. I just changed
+### https Callback
+The OAuto callback setting in your Digikey WEB account allows only https. http is not allowed. 
+This is usually not a problem in production environments. However the development server
+usually runs http. But InvenTree has the required stuff for https on board. I just changed
 the runserver to runsslserver in tasks.py.
 
