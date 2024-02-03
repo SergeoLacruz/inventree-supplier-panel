@@ -23,10 +23,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     NAME = "SupplierCart"
     SLUG = "suppliercart"
-    TITLE = "Create Mouser Cart"
+    TITLE = "Create Shopping Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2023-11-15T20:00:00"
-    DESCRIPTION = "This plugin allows to transfer a PO into a mouser shopping cart."
+    PUBLISH_DATE = "2024-02-03:00:00"
+    DESCRIPTION = "This plugin allows to transfer a PO into a supplier shopping cart."
     VERSION = PLUGIN_VERSION
 
     SETTINGS = {
@@ -58,7 +58,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         },
         'DIGIKEY_REFRESH_TOKEN': {
             'name': 'Digikey refresh token',
-            'description': 'Refresh token Digikey',
+            'description': 'Digikey Refresh token',
         },
         'PROXY_CON': {
             'name': 'Proxy CON',
@@ -75,10 +75,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return """
         <p>Setup:</p>
         <ol>
-        <li>Create a key for the Mouser API</li>
-        <li>RTFM</li>
+        <li>Read the <a href="https://github.com/SergeoLacruz/inventree-supplier-panel"> docu </a> on github</li>
         <li>Enable the plugin</li>
-        <li>Put keys into settings</li>
+        <li>Put all required keys into settings</li>
         <li>Enjoy</li>
         <li>Remove the shopping carts regularly from your Mouser account</li>
         """
@@ -88,16 +87,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         panels = []
 
         self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
-        # Here is some work to do
         if isinstance(view, PurchaseOrderDetail):
             try:
                 self.MouserPK=int(self.get_setting('MOUSER_PK'))
             except:
-                return panels
+                self.MouserPK=None
             try:
                 self.DigikeyPK=int(self.get_setting('DIGIKEY_PK'))
             except:
-                return panels
+                self.DigikeyPK=None
             order=view.get_object()
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or
                            check_user_role(view.request.user, 'purchase_order','delete') or
@@ -122,6 +120,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     def setup_urls(self):
         return [
+            # This one is for the Digikey OAuth callback
             re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
             url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
         ]
@@ -304,7 +303,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(shopping_cart)
 
     def get_parts_in_list(self, list_id):
-        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=Michael&pricingCountryIso=DE'
+        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=xxxx&pricingCountryIso=DE'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
@@ -368,7 +367,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         }
         url_data = {
             'ListName': list_name,
-            #            'CreatedBy': 'Michael',
             'accept':'application/json'
         }
         response = self.post_request(json.dumps(url_data), url,  headers=header)
@@ -378,7 +376,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(cart_data)
 
     def check_valid_listname(self, list_name):
-        url=f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=Michael'
+        url=f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=xxxx'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
