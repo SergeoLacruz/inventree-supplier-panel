@@ -284,7 +284,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    'QuantityAvailable':p['QuantityAvailable'],
                                    'UnitPrice':p['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
                                    'ExtendedPrice':p['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
-                                   'Error':'',
+                                   'Error':p['Quantities'][0]['PackOptions'][0]['FormattedExtendedPrice'][0],
                                    })
                 merchandise_total=merchandise_total+p['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
             else:
@@ -300,14 +300,16 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         shopping_cart={'MerchandiseTotal':merchandise_total,
                        'CartItems':cart_items,
                        'status_code':200,
-                       'cart_key': MetaAccess.get_value(order, self.NAME , 'DigiKeyListName'),
-                       'currency_code':'EUR',
+                       'cart_key':MetaAccess.get_value(order, self.NAME , 'DigiKeyListName'),
+                       'currency_code':InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
                        'message':'Success',
                       }
         return(shopping_cart)
 
     def get_parts_in_list(self, list_id):
-        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso=DE&currencyIso=EUR&languageIso=DE&createdBy=xxxx&pricingCountryIso=DE'
+        currency_code = InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')
+        country_code = self.COUNTRY_CODES[currency_code]
+        url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso={country_code}&currencyIso={currency_code}&languageIso={country_code}&createdBy=xxxx&pricingCountryIso={country_code}'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
