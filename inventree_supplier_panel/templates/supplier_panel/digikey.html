@@ -7,7 +7,8 @@ async function JTransferCart(){
 }
 async function JCreateToken(){
     const client_id= '{{ plugin.digikey_client_id }}'
-    const URL='https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/'
+    const callback_url = '{{ plugin.callback_url }}'
+    const URL='https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
     window.open(URL, '_blank', 'location=yes,height=800,width=1400,scrollbars=yes,status=yes')
     location.reload();
 }

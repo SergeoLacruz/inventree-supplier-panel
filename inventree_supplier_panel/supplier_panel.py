@@ -10,6 +10,7 @@ from company.models import Company
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
+from common.models import InvenTreeSetting
 
 from requests.exceptions import ConnectionError
 import requests
@@ -87,6 +88,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         panels = []
 
         self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
+        self.callback_url=InvenTreeSetting.get_setting('INVENTREE_BASE_URL')+'/'+self.base_url
         if isinstance(view, PurchaseOrderDetail):
             try:
                 self.MouserPK=int(self.get_setting('MOUSER_PK'))
