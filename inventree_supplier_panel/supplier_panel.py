@@ -29,6 +29,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     PUBLISH_DATE = "2024-02-03:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a supplier shopping cart."
     VERSION = PLUGIN_VERSION
+    COUNTRY_CODES={'AUD':'AU','CAD':'CA','CNY':'CN','GBP':'GB','JPY':'JP','NZD':'NZ','USD':'US','EUR':'DE'}
 
     SETTINGS = {
         'MOUSER_PK': {
@@ -200,6 +201,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # the button is pressed. This should be improved in future.
 
     def update_mouser_cart(self, order, cart_key):
+        country_code=self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
         cart_items=[]
         for item in order.lines.all():
             cart_items.append({'MouserPartNumber':item.part.SKU,
@@ -210,7 +212,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
           "CartItems": cart_items
         }
 #        url= 'https://api.mouser.com/api/v001/cart?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
-        url='https://api.mouser.com/api/v001/cart/items/insert?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
+        url='https://api.mouser.com/api/v001/cart/items/insert?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode='+country_code
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response=self.post_request(json.dumps(cart), url, header)
         response=response.json()
