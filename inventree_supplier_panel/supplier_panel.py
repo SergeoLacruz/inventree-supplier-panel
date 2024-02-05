@@ -109,7 +109,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 panels.append({
                     'title': 'Mouser Actions',
                     'icon': 'fa-user',
-                    'content_template': 'supplier_panel/mouser.html',
+                    'content_template': 'supplier_panel/supplier.html',
                 })
             if order.supplier.pk==self.DigikeyPK and HasPermission:
                 if (order.pk != self.PurchaseOrderPK):
@@ -117,7 +117,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 panels.append({
                     'title': 'Digikey Actions',
                     'icon': 'fa-user',
-                    'content_template': 'supplier_panel/digikey.html',
+                    'content_template': 'supplier_panel/supplier.html',
                 })
         return panels
 
