@@ -50,9 +50,12 @@ https://user:password@ipaddress:port
 ```
 
 If you do not need this just leave the fields empty.
-
 A proxy can also be set using the environment variables PROXY_CON and PROXY_URL. The
 values in the environment variables overwrite InvenTree settings.
+
+### Base URL
+The base URL for server instance is in the Server Settings category of InvenTree. The plugin
+uses this setting to build the OAuth callback for Digikey. Put the correct URL here. 
 
 ## What the plugin does
 
@@ -106,6 +109,11 @@ Mouser WEB shop you can use this shopping cart for your order.
 Please be aware that the plugin creates a new cart  with a new ID each time the button is pressed. 
 If you afterwards create a order in the WEB UI, be careful selecting the right one
 and delete all unused carts.
+
+#### Currency support
+Mouser needs a country code for currency support. The plugin selects a proper country based on 
+the InvenTree currency setting and transfers this to Mouser. Mouser sends back the sopping cart
+in the correct currency.  The currency name is shown in last line of the table.
 
 ## Working with Digikey
 
@@ -168,6 +176,13 @@ based on the PO name and adding a -xx that counts upwards each time you push the
 The reason is that each name is allowed only once. Even when the list is deleted, the
 name stays blocked forever. If you are done with your order delete the lists from your
 Digikey WEB account. 
+
+#### Currency support
+Digikey requires a country code and a currency code. The plugin  uses the same translation
+as mentioned in the Mouser section and transfers both to Digikey. Digikey sends back the 
+list in the correct currency. Unfortunately the currency code is not sent back. The only
+thing Digikey sends is a currency symbol but no info if $ is USD, AUD or whatever kind of Dollar.
+The plugin shows the symbol in the table for control. 
 
 ## How it works
 
