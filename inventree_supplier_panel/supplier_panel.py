@@ -1,4 +1,3 @@
-from django.conf.urls import url
 from django.http import HttpResponse
 from django.urls import re_path
 
@@ -125,7 +124,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return [
             # This one is for the Digikey OAuth callback
             re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
-            url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
+            re_path(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
         ]
 
 #---------------------- post_request and get_request wrappers ---------------------------
