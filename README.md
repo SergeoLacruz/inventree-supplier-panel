@@ -196,7 +196,7 @@ the supplier must be Mouser or Digikey and the user must have edit permissions t
 The content_template is an html file that defines how the panel content looks.
 
 ```
-url(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
+re_path(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
 ```
 Here we define the url that controls the panel. Let's look at the details here:
 
@@ -213,7 +213,7 @@ number with n digits.
 May be it is worth to leave a few more words on this. We define the url of the plugin. This is called by the Javascript
 function when we push the button. Let's have a look on the names and how they belong together:
 
-![Dataflow](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/plugin_dataflow.png)
+![Dataflow](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/plugin_dataflow.svg)
 
 In the picture you see the relevant lines in the python and java code. The names in the coloured boxes need to match.
 In case something does not fit the panel will not render and you will get an error message.
