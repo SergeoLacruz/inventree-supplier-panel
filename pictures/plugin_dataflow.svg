@@ -140,7 +140,7 @@
        y="147.95529" />
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        x="68.770256"
        y="183.03281"
        id="text817"><tspan
@@ -148,15 +148,15 @@
          id="tspan815"
          x="68.770256"
          y="183.03281"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';stroke-width:0.385833">def TransferCart(self,request,pk):</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833;font-size:4.23333333px">def TransferCart(self,request,pk):</tspan><tspan
          sodipodi:role="line"
          x="68.770256"
          y="188.17725"
          id="tspan819"
-         style="stroke-width:0.385833" /></text>
+         style="stroke-width:0.385833;-inkscape-font-specification:Arial;font-family:Arial;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:4.23333333px" /></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        x="68.803177"
        y="167.63768"
        id="text823"><tspan
@@ -164,15 +164,15 @@
          id="tspan821"
          x="68.803177"
          y="167.63768"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';stroke-width:0.385833">re_path(r'transfercart/(?P&lt;pk&gt;\d+)/', self.TransferCart, name='transfer-cart'),</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833;font-size:4.23333333px">re_path(r'transfercart/(?P&lt;pk&gt;\d+)/', self.TransferCart, name='transfer-cart'),</tspan><tspan
          sodipodi:role="line"
          x="68.803177"
          y="172.78212"
          id="tspan825"
-         style="stroke-width:0.385833" /></text>
+         style="stroke-width:0.385833;-inkscape-font-specification:Arial;font-family:Arial;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:4.23333333px" /></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        x="68.95134"
        y="215.77185"
        id="text829"><tspan
@@ -180,15 +180,15 @@
          id="tspan827"
          x="68.95134"
          y="215.77185"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';stroke-width:0.385833">response = await fetch( &quot;{% url 'plugin:suppliercart:transfer-cart' order.pk %}&quot;);</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833;font-size:4.23333333px">response = await fetch( &quot;{% url 'plugin:suppliercart:transfer-cart' order.pk %}&quot;);</tspan><tspan
          sodipodi:role="line"
          x="68.95134"
          y="220.91629"
          id="tspan831"
-         style="stroke-width:0.385833" /></text>
+         style="stroke-width:0.385833;-inkscape-font-specification:Arial;font-family:Arial;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:4.23333333px" /></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        x="68.95134"
        y="152.43741"
        id="text835"><tspan
@@ -196,12 +196,12 @@
          id="tspan833"
          x="68.95134"
          y="152.43741"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Courier 10 Pitch';-inkscape-font-specification:'Courier 10 Pitch';stroke-width:0.385833">SLUG = &quot;suppliercart&quot;</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833;font-size:4.23333333px">SLUG = &quot;suppliercart&quot;</tspan><tspan
          sodipodi:role="line"
          x="68.95134"
          y="157.58185"
          id="tspan837"
-         style="stroke-width:0.385833" /></text>
+         style="stroke-width:0.385833;-inkscape-font-specification:Arial;font-family:Arial;font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:4.23333333px" /></text>
     <flowRoot
        xml:space="preserve"
        id="flowRoot839"
@@ -217,21 +217,23 @@
        id="text851"
        y="140.16028"
        x="68.95134"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:Arial;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';stroke-width:0.385833"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833"
          y="140.16028"
          x="68.95134"
          id="tspan847"
-         sodipodi:role="line">Python:</tspan><tspan
+         sodipodi:role="line"><tspan
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold'"
+   id="tspan508">Python</tspan>:</tspan><tspan
          id="tspan849"
-         y="145.30472"
+         y="145.45195"
          x="68.95134"
          sodipodi:role="line"
-         style="stroke-width:0.385833" /></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.23333px;font-family:Arial;-inkscape-font-specification:Arial;stroke-width:0.385833" /></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.11555px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.23333333px;line-height:1.25;font-family:Arial;-inkscape-font-specification:'Arial Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.385833"
        x="68.95134"
        y="207.00249"
        id="text857"><tspan
@@ -239,12 +241,12 @@
          id="tspan853"
          x="68.95134"
          y="207.00249"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';stroke-width:0.385833">Javascript:</tspan><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Arial;-inkscape-font-specification:'Arial Bold';stroke-width:0.385833;font-size:4.23333333px">Javascript:</tspan><tspan
          sodipodi:role="line"
          x="68.95134"
          y="212.14693"
          id="tspan855"
-         style="stroke-width:0.385833" /></text>
+         style="stroke-width:0.385833;-inkscape-font-specification:'Arial Bold';font-family:Arial;font-weight:bold;font-style:normal;font-stretch:normal;font-variant:normal;font-size:4.23333333px" /></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.385833px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker1867)"
        d="m 200.68696,170.75568 -21.82601,39.3648"
@@ -277,21 +279,21 @@
        sodipodi:nodetypes="czzzc" />
     <rect
        y="211.09485"
-       x="143.58855"
+       x="140.51495"
        height="6.430881"
        width="22.995275"
        id="rect6347"
        style="opacity:1;fill:#00fc00;fill-opacity:0.271186;stroke:none;stroke-width:0.340488;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     <rect
-       style="opacity:1;fill:#00fc9d;fill-opacity:0.271186;stroke:none;stroke-width:0.348494;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="opacity:1;fill:#00fc9d;fill-opacity:0.271186;stroke:none;stroke-width:0.325615;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect6349"
-       width="26.308155"
+       width="22.967285"
        height="6.430881"
-       x="185.87646"
-       y="163.74017" />
+       x="184.13921"
+       y="162.93837" />
     <rect
-       y="211.67946"
-       x="193.28171"
+       y="211.14491"
+       x="188.47086"
        height="6.430881"
        width="16.564394"
        id="rect6351"
@@ -311,18 +313,18 @@
        x="124.49078"
        y="178.55069" />
     <rect
-       y="162.57091"
-       x="147.09628"
+       y="163.23907"
+       x="144.82449"
        height="6.430881"
        width="24.164528"
        id="rect6357"
        style="opacity:1;fill:#e7fc9d;fill-opacity:0.271186;stroke:none;stroke-width:0.345643;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
     <rect
-       style="opacity:1;fill:#e7fc9d;fill-opacity:0.271186;stroke:none;stroke-width:0.386441;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="opacity:1;fill:#e7fc9d;fill-opacity:0.271186;stroke:none;stroke-width:0.348694;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect6359"
-       width="30.205658"
+       width="24.592999"
        height="6.430881"
-       x="77.720718"
-       y="178.74556" />
+       x="75.181656"
+       y="178.07739" />
   </g>
 </svg>
