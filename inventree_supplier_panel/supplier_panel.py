@@ -2,16 +2,20 @@ from django.http import HttpResponse
 from django.urls import re_path
 
 from order.views import PurchaseOrderDetail
+from part.views import PartDetail
+from part.models import Part
 from order.models import PurchaseOrder
 from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
 from company.models import Company
+from company.models import ManufacturerPart, SupplierPart
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
 from common.models import InvenTreeSetting
 
 from requests.exceptions import ConnectionError
+from urllib.parse import quote
 import requests
 import json
 import os
@@ -44,6 +48,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         'MOUSERKEY': {
             'name': 'Mouser API key',
             'description': 'Place here your key for the Mouser API',
+        },
+        'MOUSERSEARCHKEY': {
+            'name': 'Mouser search API key',
+            'description': 'Place here your key for the Mouser search API',
         },
         'DIGIKEY_CLIENT_ID': {
             'name': 'Digikey ID',
@@ -89,15 +97,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
         self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
         self.callback_url=InvenTreeSetting.get_setting('INVENTREE_BASE_URL')+'/'+self.base_url
+        try:
+            self.MouserPK=int(self.get_setting('MOUSER_PK'))
+        except:
+            self.MouserPK=None
+        try:
+            self.DigikeyPK=int(self.get_setting('DIGIKEY_PK'))
+        except:
+            self.DigikeyPK=None
         if isinstance(view, PurchaseOrderDetail):
-            try:
-                self.MouserPK=int(self.get_setting('MOUSER_PK'))
-            except:
-                self.MouserPK=None
-            try:
-                self.DigikeyPK=int(self.get_setting('DIGIKEY_PK'))
-            except:
-                self.DigikeyPK=None
             order=view.get_object()
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or
                            check_user_role(view.request.user, 'purchase_order','delete') or
@@ -118,6 +126,17 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     'icon': 'fa-user',
                     'content_template': 'supplier_panel/supplier.html',
                 })
+        if isinstance(view, PartDetail):
+            HasPermission=(check_user_role(view.request.user, 'part','change') or
+                           check_user_role(view.request.user, 'part','delete') or
+                           check_user_role(view.request.user, 'part','add'))
+            if HasPermission:
+                panels.append({
+                    'title': 'Supplier parts',
+                    'icon': 'fa-user',
+                    'content_template': 'supplier_panel/add_supplierpart.html',
+                })
+
         return panels
 
     def setup_urls(self):
@@ -125,6 +144,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             # This one is for the Digikey OAuth callback
             re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
             re_path(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
+            re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
         ]
 
 #---------------------- post_request and get_request wrappers ---------------------------
@@ -252,10 +272,68 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         MetaAccess.set_value(order, self.NAME, 'MouserCartKey', response['CartKey'])
         return(shopping_cart)
 
+#---------------------------- get_partdata -------------------------------------------
+    def get_partdata(self, supplier, sku):
+
+        # This will crash if the suppliers are not confugured. 
+        if supplier == self.MouserPK:
+            part_data = self.get_mouser_partdata(sku)
+        elif supplier == self.DigikeyPK:
+            part_data = self.get_digikey_partdata(sku)
+        return(part_data)
+#---------------------------- get_mouser_partdata ------------------------------------
+    def get_mouser_partdata(self, sku):
+        part_data={}
+
+        part={
+          "SearchByPartRequest": {
+          "mouserPartNumber": sku,
+          "partSearchOptions": "exact"
+          }
+        }
+        country_code=self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
+        url='https://api.mouser.com/api/v1.0/search/partnumber?apiKey='+self.get_setting('MOUSERSEARCHKEY')
+        header = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        response=self.post_request(json.dumps(part), url, header)
+        response=response.json()
+        if response['Errors']!=[]:
+            part_data['status_code'] = response['Errors']
+            return(part_data)
+        NumberOfResults=int(response['SearchResults']['NumberOfResult'])
+        if NumberOfResults == 0:
+            part_data['status_code'] = 'Part not found: ' + sku
+            return(part_data)
+        for i in range(0, NumberOfResults):
+            part_data['status_code'] =  200
+            part_data['message'] =  'OK'
+            part_data['SKU'] = response['SearchResults']['Parts'][i]['MouserPartNumber']
+            part_data['MPN'] = response['SearchResults']['Parts'][i]['ManufacturerPartNumber']
+            part_data['URL'] = response['SearchResults']['Parts'][i]['ProductDetailUrl']
+            part_data['lifecycle_status'] = response['SearchResults']['Parts'][i]['LifecycleStatus']
+            part_data['pack_quantity'] = response['SearchResults']['Parts'][i]['Mult']
+            part_data['description'] = response['SearchResults']['Parts'][i]['Description']
+            part_data['package'] = self.get_mouser_package(response['SearchResults']['Parts'][i])
+            part_data['price_breaks'] = response['SearchResults']['Parts'][i]['PriceBreaks']
+        return(part_data)
+
+#-------------------------------- get_mouser_package --------------------------------
+    # Extracts the available packages from the Mouser part data json
+    def get_mouser_package(self, PartData):
+        Package=''
+        try:
+            Attributes=PartData['ProductAttributes']
+        except:
+            return None
+        for Att in Attributes:
+            if Att['AttributeName']=='Verpackung':
+                Package=Package+Att['AttributeValue']+', '
+        return(Package)
+
+
 # The Digikey part
 # digikey has no shopping cart API. So we create a list using the MyLists API.
 # The list can easily be transfered into an order in the web interface.
-
+#-------------------------- update_digikey_cart ---------------------------------------
     def update_digikey_cart(self, order, list_id):
         url=f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
         header = {
@@ -316,6 +394,41 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         }
         response = self.get_request(url,  headers=header)
         return(response.json())
+
+#---------------------------- get_digikey_partdata ------------------------------------
+    def get_digikey_partdata(self, sku):
+        part_data={}
+        token=self.refresh_digikey_access_token()
+
+        # replace invalid characters in the partnumber
+        sku = quote(sku) #it replaces invalid characters in the partnumber
+        url = f'https://api.digikey.com/Search/v3/Products/{sku}'
+        header = {
+            'X-DIGIKEY-Locale-Site': 'DE',
+            'X-DIGIKEY-Locale-Currency': 'EUR',
+            'X-DIGIKEY-Locale-Language': 'de',
+            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+            'Content-Type':'application/json'
+        }
+        response = self.get_request(url,  headers=header)
+        print('Remaining requests:',response.headers['X-RateLimit-Remaining'])
+        response=response.json()
+        print(response)
+
+        part_data['status_code'] =  200
+        part_data['message'] =  'OK'
+        part_data['SKU'] = response['DigiKeyPartNumber']
+        part_data['MPN'] = response['ManufacturerPartNumber']
+        part_data['URL'] = response['ProductUrl']
+        part_data['lifecycle_status'] = response['ProductStatus']
+        part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
+        part_data['description'] =  response['DetailedDescription']
+        for p in response['Parameters']:
+            if p['ParameterId'] == 7:
+                part_data['package'] =  p['Value']
+
+        return(part_data)
 
 #--------------------- create_cart ---------------------------------------
 # This is a wrapper that selects the proper creation function base
@@ -460,5 +573,33 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 if POItem.part.SKU==Item['SKU']:
                     POItem.purchase_price=Item['UnitPrice']
                     POItem.save()
-        return HttpResponse(f'OK')
+        return HttpResponse('OK')
+
+    def add_supplierpart(self,request):
+        data=json.loads(request.body)
+        print(data)
+        self.part_data=self.get_partdata(data['supplier'], data['sku'])
+        print(self.part_data)
+        if (data['sku'] == ''):
+            self.part_data['status_code'] = 'Please provide part number'
+            return HttpResponse('OK')
+        if (self.part_data['status_code'] != 200):
+            return HttpResponse('OK')
+        part = Part.objects.filter(id=data['pk']).all()[0]
+        supplier = Company.objects.filter(id=data['supplier']).all()[0]
+        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
+        if len(manufacturer_part) == 0:
+            self.part_data['status_code'] = 'Part has no manufacturer part'
+            return HttpResponse('OK')
+        sp=SupplierPart.objects.create(part=part, 
+                                       supplier = supplier, 
+                                       manufacturer_part = manufacturer_part[0],
+                                       SKU = self.part_data['SKU'],
+                                       link = self.part_data['URL'],
+                                       note = self.part_data['lifecycle_status'],
+                                       packaging = self.part_data['package'],
+                                       pack_quantity = self.part_data['pack_quantity'],
+                                       description = self.part_data['description'],
+                                       )
+        return HttpResponse('OK')
 

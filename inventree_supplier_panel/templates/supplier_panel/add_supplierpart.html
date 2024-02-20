@@ -1,0 +1,73 @@
+{% load i18n %}
+
+<script>
+async function SelectCompany(){
+    const sku = document.getElementById("sku").value
+    const supplier = parseInt(document.getElementById("supplier").value)
+    const pk = {{ part.pk }}
+    const cmd_url="{% url 'plugin:suppliercart:add-supplierpart' %}";
+    data = {
+	sku: sku,
+	supplier: supplier,
+        pk: pk,
+   }
+    response = await inventreeFormDataUpload(url=cmd_url, data=JSON.stringify(data))
+    location.reload();
+
+}
+
+</script>
+
+{% if plugin.part_data.status_code == 200 %}
+	<div class='alert alert-block alert-info'>
+	{{ plugin.part_data.status_code }} {{ plugin.part_data.message }}
+	</div>
+{% else %}
+	<div class='alert alert-block alert-danger'>
+	{{ plugin.part_data.status_code }} {{ plugin.part_data.message }}
+	</div>
+{% endif %}
+
+<table class='table table-condensed'>
+	    <form>
+<thead>
+    <tr>
+	<td> {% trans "Name" %} </td>
+	<td> {% trans "Data" %} </td>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+        <td> Supplier part number</td>
+        <td> 
+                <input id="sku" type="text" value="">
+        </td>
+    </tr>
+    <tr>
+        <td> Supplier </td>
+        <td> 
+	    <select id="supplier">
+                <option value="{{ plugin.DigikeyPK }}"> Digikey </option>
+                <option value="{{ plugin.MouserPK }}"> Mouser </option>
+	    </select>
+        </td>
+    </tr>
+</tbody>
+<tfoot>
+    <tr>
+	<td>
+            <input type="button" value="Add Part" onclick="SelectCompany()" title='Add Part' />
+	</td>
+	<td> </td>
+    </tr>
+</tfoot>
+</form>
+</table>
+
+
+<script>
+//document.getElementById("ems").addEventListener("click",ListenEvent);
+document.getElementById("ems").onchange = ListenEvent;
+const ems_contact=document.getElementById("ems_contact")
+ListenEvent()
+</script>
