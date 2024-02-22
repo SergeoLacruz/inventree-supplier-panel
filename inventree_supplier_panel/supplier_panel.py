@@ -164,16 +164,16 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     data=post_data,
                     timeout=5,
                     headers=headers)
-            response.error_type = "OK"
         except Exception as e:
-            self.cart_content={'status_code': e.args,
-                              }
+            self.status_code = e.args
             raise ConnectionError
+        print('dddd',response)
+        print('dddd',response.content)
         if response.status_code != 200:
-            self.cart_content={'status_code': response.status_code,
-                               'message' : response.content
-                              }
-            raise ConnectionError
+            self.status_code = response.status_code
+            self.message = response.content
+            return(None)
+#            raise ConnectionError
         return(response)
 
     def get_request(self, path, headers):
@@ -192,15 +192,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     timeout=5,
                     headers=headers)
         except Exception as e:
-            self.cart_content={'status_code': e.args,
-                              }
+            self.status_code= e.args
             raise ConnectionError
+        print('dddd',response)
+        print('dddd',response.content)
         if response.status_code != 200:
-            self.cart_content={'status_code': response.status_code,
-                               'message' : response.content
-                              }
-            raise ConnectionError
-        response.error_type = "OK"
+            self.status_code= response.status_code
+            self.message = response.content
+            return(None)
+#            raise ConnectionError
         return(response)
 #------------------------- update_cart ----------------------------------
 # Sends the PO data to the supplier and get back the result. We use a simple
@@ -236,8 +236,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         response=self.post_request(json.dumps(cart), url, header)
         response=response.json()
         if response['Errors']!=[]:
-            shopping_cart={'status_code':'Mouser answered: ', 'message':response['Errors'][0]['Message']}
-            return(shopping_cart)
+            self.status_code='Mouser answered: '
+            self.message=response['Errors'][0]['Message']
+            return({})
         cart_items=[]
         for p in response['CartItems']:
             if p['Errors'] == []:
@@ -263,12 +264,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                   })
         shopping_cart={'MerchandiseTotal':response['MerchandiseTotal'],
                        'CartItems':cart_items,
-                       'status_code':200,
                        'cart_key':response['CartKey'],
                        'currency_code':response['CurrencyCode'],
-                       'message':'Success'
                       }
-
+        self.status_code=200
+        self.message='OK'
         MetaAccess.set_value(order, self.NAME, 'MouserCartKey', response['CartKey'])
         return(shopping_cart)
 
@@ -297,15 +297,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         response=self.post_request(json.dumps(part), url, header)
         response=response.json()
         if response['Errors']!=[]:
-            part_data['status_code'] = response['Errors']
+            self.status_code = response['Errors']
             return(part_data)
         NumberOfResults=int(response['SearchResults']['NumberOfResult'])
         if NumberOfResults == 0:
-            part_data['status_code'] = 'Part not found: ' + sku
+            self.status_code = 'Part not found: ' + sku
             return(part_data)
         for i in range(0, NumberOfResults):
-            part_data['status_code'] =  200
-            part_data['message'] =  'OK'
             part_data['SKU'] = response['SearchResults']['Parts'][i]['MouserPartNumber']
             part_data['MPN'] = response['SearchResults']['Parts'][i]['ManufacturerPartNumber']
             part_data['URL'] = response['SearchResults']['Parts'][i]['ProductDetailUrl']
@@ -314,6 +312,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             part_data['description'] = response['SearchResults']['Parts'][i]['Description']
             part_data['package'] = self.get_mouser_package(response['SearchResults']['Parts'][i])
             part_data['price_breaks'] = response['SearchResults']['Parts'][i]['PriceBreaks']
+        self.status_code=200
+        self.message='OK'
         return(part_data)
 
 #-------------------------------- get_mouser_package --------------------------------
@@ -376,11 +376,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    })
         shopping_cart={'MerchandiseTotal':merchandise_total,
                        'CartItems':cart_items,
-                       'status_code':200,
                        'cart_key':MetaAccess.get_value(order, self.NAME , 'DigiKeyListName'),
                        'currency_code':InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
-                       'message':'Success',
                       }
+        self.status_code=200
+        self.message='OK'
         return(shopping_cart)
 
     def get_parts_in_list(self, list_id):
@@ -393,41 +393,41 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'accept':'application/json'
         }
         response = self.get_request(url,  headers=header)
+        if not response:
+            return(None)
         return(response.json())
 
 #---------------------------- get_digikey_partdata ------------------------------------
     def get_digikey_partdata(self, sku):
         part_data={}
         token=self.refresh_digikey_access_token()
-
+        if not token:
+            return(None)
         # replace invalid characters in the partnumber
         sku = quote(sku) #it replaces invalid characters in the partnumber
         url = f'https://api.digikey.com/Search/v3/Products/{sku}'
         header = {
-            'X-DIGIKEY-Locale-Site': 'DE',
-            'X-DIGIKEY-Locale-Currency': 'EUR',
-            'X-DIGIKEY-Locale-Language': 'de',
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'Content-Type':'application/json'
         }
         response = self.get_request(url,  headers=header)
+        if not response:
+            return(None)
         print('Remaining requests:',response.headers['X-RateLimit-Remaining'])
         response=response.json()
-        print(response)
-
-        part_data['status_code'] =  200
-        part_data['message'] =  'OK'
         part_data['SKU'] = response['DigiKeyPartNumber']
         part_data['MPN'] = response['ManufacturerPartNumber']
         part_data['URL'] = response['ProductUrl']
         part_data['lifecycle_status'] = response['ProductStatus']
         part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
         part_data['description'] =  response['DetailedDescription']
+        part_data['package'] = ''
         for p in response['Parameters']:
             if p['ParameterId'] == 7:
-                part_data['package'] =  p['Value']
-
+                part_data['package'] = p['Value']
+        self.status_code=200
+        self.message='OK'
         return(part_data)
 
 #--------------------- create_cart ---------------------------------------
@@ -449,9 +449,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     def create_mouser_cart(self, order):
         cart_data={}
-        cart_data['status_code']=200
+        self.status_code=200
         cart_data['ID']=''
-        cart_data['message']='cc success'
+        self.message='cc success'
         return(cart_data)
 
 # Digikey does not have a cart API. So we create a list using the MyLists API
@@ -466,15 +466,17 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             list_name = order.reference + '-00'
         version=int(list_name[len(list_name)-2:])+1
         token=self.refresh_digikey_access_token()
+        if not token:
+            return(None)
         list_name=order.reference + '-' + str(version).zfill(2)
         i=version
         while not self.check_valid_listname(list_name):
             i=i+1
             list_name=order.reference + '-' + str(i).zfill(2)
             if i==version + 20:
-                cart_data['status_code']=0
+                self.status_code=0
                 cart_data['ID']=''
-                cart_data['message']='No valid list name found within 20 attempts'
+                self.message='No valid list name found within 20 attempts'
                 return cart_data
         MetaAccess.set_value(order, self.NAME , 'DigiKeyListName', list_name)
         url = f'https://api.digikey.com/mylists/v1/lists'
@@ -488,9 +490,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'accept':'application/json'
         }
         response = self.post_request(json.dumps(url_data), url,  headers=header)
-        cart_data['status_code']=response.status_code
+        self.status_code=response.status_code
         cart_data['ID']=response.json()
-        cart_data['message']='success'
+        self.message='success'
         return(cart_data)
 
     def check_valid_listname(self, list_name):
@@ -519,6 +521,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         header={}
         token={}
         response = self.post_request(url_data, url,  headers=header)
+        if not response:
+            return(None)
         print('\033[32mToken refresh SUCCESS\033[0m')
         response_data = response.json()
         self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
@@ -559,13 +563,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         self.PurchaseOrderPK=int(pk)
         Order=PurchaseOrder.objects.filter(id=pk).all()[0]
         cart_data=self.create_cart(Order)
-        if cart_data['status_code'] != 200:
+        if self.status_code != 200:
             self.cart_content={}
-            self.cart_content['status_code']=str(cart_data['status_code'])
-            self.cart_content['message']=cart_data['message']
             return HttpResponse(f'Error')
         self.cart_content=self.update_cart(Order, cart_data['ID'])
-        if self.cart_content['status_code'] != 200:
+        if self.status_code != 200:
             return HttpResponse(f'Error')
         # Now we transfer the actual prices back into the PO
         for POItem in Order.lines.all():
@@ -577,19 +579,17 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     def add_supplierpart(self,request):
         data=json.loads(request.body)
-        print(data)
         self.part_data=self.get_partdata(data['supplier'], data['sku'])
-        print(self.part_data)
         if (data['sku'] == ''):
-            self.part_data['status_code'] = 'Please provide part number'
+            self.status_code = 'Please provide part number'
             return HttpResponse('OK')
-        if (self.part_data['status_code'] != 200):
+        if (self.status_code != 200):
             return HttpResponse('OK')
         part = Part.objects.filter(id=data['pk']).all()[0]
         supplier = Company.objects.filter(id=data['supplier']).all()[0]
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
-            self.part_data['status_code'] = 'Part has no manufacturer part'
+            self.status_code = 'Part has no manufacturer part'
             return HttpResponse('OK')
         sp=SupplierPart.objects.create(part=part, 
                                        supplier = supplier, 

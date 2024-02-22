@@ -24,13 +24,13 @@ async function JCreateToken(){
 {% endif %}
 </button>
 
-{% if plugin.cart_content.status_code == 200 %}
+{% if plugin.status_code == 200 %}
 	<div class='alert alert-block alert-info'>
-	{{ plugin.cart_content.status_code }} {{ plugin.cart_content.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% else %}
 	<div class='alert alert-block alert-danger'>
-	{{ plugin.cart_content.status_code }} {{ plugin.cart_content.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% endif %}
 

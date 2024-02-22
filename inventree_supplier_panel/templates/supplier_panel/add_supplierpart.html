@@ -18,13 +18,13 @@ async function SelectCompany(){
 
 </script>
 
-{% if plugin.part_data.status_code == 200 %}
+{% if plugin.status_code == 200 %}
 	<div class='alert alert-block alert-info'>
-	{{ plugin.part_data.status_code }} {{ plugin.part_data.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% else %}
 	<div class='alert alert-block alert-danger'>
-	{{ plugin.part_data.status_code }} {{ plugin.part_data.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% endif %}
 
