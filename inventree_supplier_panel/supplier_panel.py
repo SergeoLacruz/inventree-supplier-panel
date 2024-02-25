@@ -2,13 +2,12 @@ from django.http import HttpResponse
 from django.urls import re_path
 
 from order.views import PurchaseOrderDetail
+from order.models import PurchaseOrder
 from part.views import PartDetail
 from part.models import Part
-from order.models import PurchaseOrder
 from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
-from company.models import Company
-from company.models import ManufacturerPart, SupplierPart
+from company.models import Company, ManufacturerPart, SupplierPart
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
@@ -94,55 +93,54 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # Create the panel that will display on the PurchaseOrder view,
     def get_custom_panels(self, view, request):
         panels = []
-
         self.digikey_client_id=self.get_setting('DIGIKEY_CLIENT_ID')
         self.callback_url=InvenTreeSetting.get_setting('INVENTREE_BASE_URL')+'/'+self.base_url
         try:
-            self.MouserPK=int(self.get_setting('MOUSER_PK'))
+            self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
+            self.registered_suppliers['Mouser']['is_registered'] = True
         except:
-            self.MouserPK=None
+            pass
         try:
-            self.DigikeyPK=int(self.get_setting('DIGIKEY_PK'))
+            self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
+            self.registered_suppliers['Digikey']['is_registered'] = True
         except:
-            self.DigikeyPK=None
+            pass
         if isinstance(view, PurchaseOrderDetail):
             order=view.get_object()
             HasPermission=(check_user_role(view.request.user, 'purchase_order','change') or
                            check_user_role(view.request.user, 'purchase_order','delete') or
                            check_user_role(view.request.user, 'purchase_order','add'))
-            if order.supplier.pk==self.MouserPK and HasPermission:
-                if (order.pk != self.PurchaseOrderPK):
-                    self.cart_content=[]
-                panels.append({
-                    'title': 'Mouser Actions',
-                    'icon': 'fa-user',
-                    'content_template': 'supplier_panel/supplier.html',
-                })
-            if order.supplier.pk==self.DigikeyPK and HasPermission:
-                if (order.pk != self.PurchaseOrderPK):
-                    self.cart_content=[]
-                panels.append({
-                    'title': 'Digikey Actions',
-                    'icon': 'fa-user',
-                    'content_template': 'supplier_panel/supplier.html',
-                })
+
+            for s in self.registered_suppliers:
+                if order.supplier.pk == self.registered_suppliers[s]['pk'] and HasPermission:
+                    if (order.pk != self.PurchaseOrderPK):
+                        self.cart_content=[]
+                    panels.append({
+                        'title': self.registered_suppliers[s]['name']+' Actions',
+                        'icon': 'fa-user',
+                        'content_template': self.registered_suppliers[s]['po_template'],
+                    })
         if isinstance(view, PartDetail):
             HasPermission=(check_user_role(view.request.user, 'part','change') or
                            check_user_role(view.request.user, 'part','delete') or
                            check_user_role(view.request.user, 'part','add'))
-            if HasPermission:
+            show_panel=False
+            for s in self.registered_suppliers:
+                show_panel = show_panel or self.registered_suppliers[s]['is_registered'] 
+            if HasPermission and show_panel:
                 panels.append({
-                    'title': 'Supplier parts',
+                    'title': 'Automatic Supplier parts',
                     'icon': 'fa-user',
                     'content_template': 'supplier_panel/add_supplierpart.html',
                 })
-
         return panels
 
     def setup_urls(self):
         return [
             # This one is for the Digikey OAuth callback
             re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
+
+            # Now for the plugin
             re_path(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
             re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
         ]
@@ -167,13 +165,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         except Exception as e:
             self.status_code = e.args
             raise ConnectionError
-        print('dddd',response)
-        print('dddd',response.content)
         if response.status_code != 200:
             self.status_code = response.status_code
             self.message = response.content
             return(None)
-#            raise ConnectionError
         return(response)
 
     def get_request(self, path, headers):
@@ -194,29 +189,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         except Exception as e:
             self.status_code= e.args
             raise ConnectionError
-        print('dddd',response)
-        print('dddd',response.content)
         if response.status_code != 200:
             self.status_code= response.status_code
             self.message = response.content
             return(None)
-#            raise ConnectionError
         return(response)
+
 #------------------------- update_cart ----------------------------------
-# Sends the PO data to the supplier and get back the result. We use a simple
-# wrapper that calls a dedicated sunction for each supplier.
-
-    def update_cart(self, order, cart_key):
-        if order.supplier.pk==self.MouserPK:
-            cart_data=self.update_mouser_cart(order, cart_key)
-        elif order.supplier.pk==self.DigikeyPK:
-            cart_data=self.update_digikey_cart(order, cart_key)
-        else:
-            cart_data=None
-        return(cart_data)
-
 # The Mouser part
-# Actually we do not send an empty CartKey. So Mouser creates a new key each time
+# Actually we send an empty CartKey. So Mouser creates a new key each time
 # the button is pressed. This should be improved in future.
 
     def update_mouser_cart(self, order, cart_key):
@@ -275,11 +256,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 #---------------------------- get_partdata -------------------------------------------
     def get_partdata(self, supplier, sku):
 
-        # This will crash if the suppliers are not confugured. 
-        if supplier == self.MouserPK:
-            part_data = self.get_mouser_partdata(sku)
-        elif supplier == self.DigikeyPK:
-            part_data = self.get_digikey_partdata(sku)
+        for s in self.registered_suppliers:
+            print('---',supplier,s, self.registered_suppliers[s]['pk'])
+            if supplier == self.registered_suppliers[s]['pk']:
+                print('---',supplier,s)
+                part_data = self.registered_suppliers[s]['get_partdata'](self, sku)
         return(part_data)
 #---------------------------- get_mouser_partdata ------------------------------------
     def get_mouser_partdata(self, sku):
@@ -328,7 +309,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             if Att['AttributeName']=='Verpackung':
                 Package=Package+Att['AttributeValue']+', '
         return(Package)
-
 
 # The Digikey part
 # digikey has no shopping cart API. So we create a list using the MyLists API.
@@ -403,8 +383,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         token=self.refresh_digikey_access_token()
         if not token:
             return(None)
+
         # replace invalid characters in the partnumber
-        sku = quote(sku) #it replaces invalid characters in the partnumber
+        sku = quote(sku) 
         url = f'https://api.digikey.com/Search/v3/Products/{sku}'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
@@ -431,19 +412,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(part_data)
 
 #--------------------- create_cart ---------------------------------------
-# This is a wrapper that selects the proper creation function base
-# on the supplier.
-
-    def create_cart(self, order):
-        if order.supplier.pk==self.MouserPK:
-            cart_data=self.create_mouser_cart(order)
-        elif order.supplier.pk==self.DigikeyPK:
-            cart_data=self.create_digikey_cart(order)
-        else:
-            cart_data=None
-        return(cart_data)
-
-# This is just a dummy. We do not create a cart ID so far. It is automatically
+# For Mouser this is just a dummy. We do not create a cart ID so far. It is automatically
 # created by Mouser during item insertion. The return values are only for error
 # handling.
 
@@ -451,7 +420,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         cart_data={}
         self.status_code=200
         cart_data['ID']=''
-        self.message='cc success'
+        self.message='Success'
         return(cart_data)
 
 # Digikey does not have a cart API. So we create a list using the MyLists API
@@ -560,25 +529,32 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # This is called when the button is pressed and does most of the work.
 
     def TransferCart(self,request,pk):
+
         self.PurchaseOrderPK=int(pk)
-        Order=PurchaseOrder.objects.filter(id=pk).all()[0]
-        cart_data=self.create_cart(Order)
+        order=PurchaseOrder.objects.filter(id=pk).all()[0]
+        for s in self.registered_suppliers:
+            if order.supplier.pk == self.registered_suppliers[s]['pk']:
+                supplier=s
+        cart_data = self.registered_suppliers[supplier]['create_cart'](self, order)
         if self.status_code != 200:
             self.cart_content={}
             return HttpResponse(f'Error')
-        self.cart_content=self.update_cart(Order, cart_data['ID'])
+        self.cart_content = self.registered_suppliers[supplier]['update_cart'](self, order, cart_data['ID'])
         if self.status_code != 200:
             return HttpResponse(f'Error')
+
         # Now we transfer the actual prices back into the PO
-        for POItem in Order.lines.all():
+        for POItem in order.lines.all():
             for Item in self.cart_content['CartItems']:
                 if POItem.part.SKU==Item['SKU']:
                     POItem.purchase_price=Item['UnitPrice']
                     POItem.save()
         return HttpResponse('OK')
 
+#---------------------------- add_supplierpart ---------------------------------------
     def add_supplierpart(self,request):
         data=json.loads(request.body)
+        print(data)
         self.part_data=self.get_partdata(data['supplier'], data['sku'])
         if (data['sku'] == ''):
             self.status_code = 'Please provide part number'
@@ -591,8 +567,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if len(manufacturer_part) == 0:
             self.status_code = 'Part has no manufacturer part'
             return HttpResponse('OK')
-        sp=SupplierPart.objects.create(part=part, 
-                                       supplier = supplier, 
+        sp=SupplierPart.objects.create(part=part,
+                                       supplier = supplier,
                                        manufacturer_part = manufacturer_part[0],
                                        SKU = self.part_data['SKU'],
                                        link = self.part_data['URL'],
@@ -603,3 +579,21 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                        )
         return HttpResponse('OK')
 
+#---------------------------- Define the supplers ----------------------------------------
+    registered_suppliers = {'Mouser':{'pk':0,
+                                      'name' : 'Mouser',
+                                      'po_template' : 'supplier_panel/mouser.html',
+                                      'is_registered' : False,
+                                      'get_partdata': get_mouser_partdata,
+                                      'update_cart' : update_mouser_cart,
+                                      'create_cart' : create_mouser_cart,
+                                      },
+                            'Digikey':{'pk':0,
+                                      'name' : 'Digikey',
+                                      'po_template' : 'supplier_panel/digikey.html',
+                                      'is_registered' : False,
+                                      'get_partdata': get_digikey_partdata,
+                                      'update_cart' : update_digikey_cart,
+                                      'create_cart' : create_digikey_cart,
+                                      }
+                            }

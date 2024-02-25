@@ -13,9 +13,7 @@ async function SelectCompany(){
    }
     response = await inventreeFormDataUpload(url=cmd_url, data=JSON.stringify(data))
     location.reload();
-
 }
-
 </script>
 
 {% if plugin.status_code == 200 %}
@@ -40,15 +38,19 @@ async function SelectCompany(){
     <tr>
         <td> Supplier part number</td>
         <td> 
-                <input id="sku" type="text" value="">
+            <input id="sku" type="text" value="">
         </td>
     </tr>
+
     <tr>
         <td> Supplier </td>
         <td> 
 	    <select id="supplier">
-                <option value="{{ plugin.DigikeyPK }}"> Digikey </option>
-                <option value="{{ plugin.MouserPK }}"> Mouser </option>
+		{% for supplier,data in plugin.registered_suppliers.items %}
+                {% if data.is_registered == True %}
+		   <option value="{{ data.pk }}"> {{ data.name }} </option>
+                {% endif %}
+		{% endfor %}
 	    </select>
         </td>
     </tr>
@@ -63,11 +65,3 @@ async function SelectCompany(){
 </tfoot>
 </form>
 </table>
-
-
-<script>
-//document.getElementById("ems").addEventListener("click",ListenEvent);
-document.getElementById("ems").onchange = ListenEvent;
-const ems_contact=document.getElementById("ems_contact")
-ListenEvent()
-</script>
