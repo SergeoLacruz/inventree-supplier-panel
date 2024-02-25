@@ -5,40 +5,22 @@ async function JTransferCart(){
     response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
     location.reload();
 }
-async function JCreateToken(){
-    const client_id= '{{ plugin.digikey_client_id }}'
-    const callback_url = '{{ plugin.callback_url }}'
-    const URL='https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
-    window.open(URL, '_blank', 'location=yes,height=800,width=1400,scrollbars=yes,status=yes')
-    location.reload();
-}
 </script>
 
 <button type='button' class='btn btn-dark' onclick="JTransferCart()" title='{% trans "Transfer PO to Supplier" %}'>
 <span class='fas fa-redo-alt'></span> {% trans "Transfer PO" %}
 </button>
 
-{% if order.supplier.pk == plugin.DigikeyPK %}
-<button type='button' class='btn btn-dark' onclick="JCreateToken()" title='{% trans "Create Token" %}'>
-<span class='fas fa-redo-alt'></span> {% trans "Create Token" %}
-{% endif %}
-</button>
-
-{% if plugin.cart_content.status_code == 200 %}
+{% if plugin.status_code == 200 %}
 	<div class='alert alert-block alert-info'>
-	{{ plugin.cart_content.status_code }} {{ plugin.cart_content.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% else %}
 	<div class='alert alert-block alert-danger'>
-	{{ plugin.cart_content.status_code }} {{ plugin.cart_content.message }}
+	{{ plugin.status_code }} {{ plugin.message }}
 	</div>
 {% endif %}
-
-{% if order.supplier.pk == plugin.DigikeyPK %}
-Created Digikey list : {{ plugin.cart_content.cart_key }}
-{% else %}
 Created Mouser shopping cart Key: {{ plugin.cart_content.cart_key }}
-{% endif %}
 <br>
 
 <table class='table table-condensed'>
