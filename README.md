@@ -5,11 +5,12 @@
 This is a plugin for [InvenTree](https://inventree.org), which uploads a purchase order
 to a supplier WEB page. After using this plugin you can directly order the parts on
 supplier WEB page. You need to have a supplier account and a different kinds of API keys
-depending on the supplier. 
+depending on the supplier.
 The data will be created in your supplier account. Each time you transfer your PO
 a new data set cart will be created. So make sure that you delete them from time to time in
 the supplier WEB interface.
-Actually the plugin supports two suppliers: Mouser and Digikey. 
+The plugin also helps to create supplierparts based on the supplier part number..
+Actually the plugin supports two suppliers: Mouser and Digikey.
 
 ## Installation
 
@@ -32,7 +33,7 @@ Place here your Mouser key for manipulating shopping carts. You find it in your 
 
 ### Digikey ID and Digikey Secret
 This is the client ID and the client secret that has been generated in the Digkey API admin WEB portal.
-Copy it from there to the InvenTree settings. 
+Copy it from there to the InvenTree settings.
 
 ### Digikey token and Digikey refrech token
 These fields are filled automatically. The Digikey API requires two tokens with different life times.
@@ -55,7 +56,7 @@ values in the environment variables overwrite InvenTree settings.
 
 ### Base URL
 The base URL for server instance is in the Server Settings category of InvenTree. The plugin
-uses this setting to build the OAuth callback for Digikey. Put the correct URL here. 
+uses this setting to build the OAuth callback for Digikey. Put the correct URL here.
 
 ## What the plugin does
 
@@ -66,7 +67,7 @@ active PO. On the panel there are three things:
 - a button that starts the transfer of your PO to the supplier
 - a status bar that shows error messages
 - a table that contains the created Mouser shopping cart.
-- in case of Digikey a button that initiates the token generation. 
+- in case of Digikey a button that initiates the token generation.
 
 ![Mouser Panel](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_panel.png)
 
@@ -101,29 +102,29 @@ WEB page here:
 ![Mouser API](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_api.png)
 
 ### Usage
-Using Mouser is easy. Only the Mouser shopping cart key is required for authentication. Its lifetime 
+Using Mouser is easy. Only the Mouser shopping cart key is required for authentication. Its lifetime
 is endless. Mouser has an API for the shopping cart. On pressing the button a shopping
 cart is crated and all items are put into this shopping cart. When you login to the
-Mouser WEB shop you can use this shopping cart for your order. 
+Mouser WEB shop you can use this shopping cart for your order.
 
-Please be aware that the plugin creates a new cart  with a new ID each time the button is pressed. 
+Please be aware that the plugin creates a new cart  with a new ID each time the button is pressed.
 If you afterwards create a order in the WEB UI, be careful selecting the right one
 and delete all unused carts.
 
 #### Currency support
-Mouser needs a country code for currency support. The plugin selects a proper country based on 
+Mouser needs a country code for currency support. The plugin selects a proper country based on
 the InvenTree currency setting and transfers this to Mouser. Mouser sends back the sopping cart
 in the correct currency.  The currency name is shown in last line of the table.
 
 ## Working with Digikey
 
-### Set up 
+### Set up
 
-You need a registration on the [Digikey API products WEB page](https://developer.digikey.com). 
+You need a registration on the [Digikey API products WEB page](https://developer.digikey.com).
 This is not your normal Digikey account for shopping. You have to apply separately. After
-registration create an organisation and inside the organization a production app. 
+registration create an organisation and inside the organization a production app.
 The most important thing to set is the OAuth Callback. This is an URL on your local server
-that is called by Digikey for key generation. The plugin sets up an URL for this. 
+that is called by Digikey for key generation. The plugin sets up an URL for this.
 Just add your local IP. The entry should look somehow like:
 
 ```
@@ -131,58 +132,72 @@ https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
 ```
 
 In this example 192.168.1.40:8123 is the local IP address and port where my
-InvenTree development server runs. Place here the appropriate address. 
+InvenTree development server runs. Place here the appropriate address.
 In Production products section make sure that Product information and MyLists is activated.
 
 In the View tab of your app you find the Client-ID and the Client-Secret. Place those in
-the plugin settings. 
+the plugin settings.
 
 Digikey Supplierparts have to by in your InvenTree Database as described already in
-the Mouser section. 
+the Mouser section.
 
-### Usage 
+### Usage
 Using Digikey is more complex. The authorisation system is token based and they do not
 have a shopping cart API.
 
 #### Authorization
-The Digikey Client ID and the Client secret are the first things you need. With those 
-you call an API endpoint. You HAVE to go through an interactive browser window and 
+The Digikey Client ID and the Client secret are the first things you need. With those
+you call an API endpoint. You HAVE to go through an interactive browser window and
 enter your credentials. Afterwards Digikey opens a callback URL on your local machine
-and transfers a key. With this key the plugin calls another API endpoint to create 
-a token and a refresh token. The key gets bad after 60 seconds. 
+and transfers a key. With this key the plugin calls another API endpoint to create
+a token and a refresh token. The key gets bad after 60 seconds.
 
 The token is used for each call to a Digikey API. It is good for 30 minutes. It has to
-be refreshed using the refresh token. This one is valid for 90 days. 
+be refreshed using the refresh token. This one is valid for 90 days.
 
 The plugin has a button in the panel that initiates the first step. It opens a browser
 where you enter your credentials. When the OAuth callback is properly set the URL
-...plugin/suppliercart/digikeytoken/ is called. This triggers a call to 
-https://api.digikey.com/v1/oauth2/token from where the plugin get the tokens. The tokens 
-are stored in the plugin setting area. Do not change them manually. 
+...plugin/suppliercart/digikeytoken/ is called. This triggers a call to
+https://api.digikey.com/v1/oauth2/token from where the plugin get the tokens. The tokens
+are stored in the plugin setting area. Do not change them manually.
 
-Each time you transfer a PO the refresh token is called independently from the 
-tokens live time. This also refreshes the refresh token. So you are save when 
+Each time you transfer a PO the refresh token is called independently from the
+tokens live time. This also refreshes the refresh token. So you are save when
 you use the plugin ate least once in 90 days. In case the token gets bad you need to
-create a fresh set using the token button again. 
+create a fresh set using the token button again.
 
 If you are confused now read the documentation on the Digikey WEB page for more details. 
 
 #### MyLists
-
 Digikey does not have such a simple shopping cart API. The plugin uses the MyLists API.
 It creates a list on the WEB shop that can easily be transferred to a shopping
 cart. When creating a list a list name has to be provided. The plugin creates a name
-based on the PO name and adding a -xx that counts upwards each time you push the button. 
+based on the PO name and adding a -xx that counts upwards each time you push the button.
 The reason is that each name is allowed only once. Even when the list is deleted, the
 name stays blocked forever. If you are done with your order delete the lists from your
-Digikey WEB account. 
+Digikey WEB account.
 
 #### Currency support
 Digikey requires a country code and a currency code. The plugin  uses the same translation
-as mentioned in the Mouser section and transfers both to Digikey. Digikey sends back the 
+as mentioned in the Mouser section and transfers both to Digikey. Digikey sends back the
 list in the correct currency. Unfortunately the currency code is not sent back. The only
 thing Digikey sends is a currency symbol but no info if $ is USD, AUD or whatever kind of Dollar.
-The plugin shows the symbol in the table for control. 
+The plugin shows the symbol in the table for control.
+
+## Automatically add supplierparts
+The plugin can add supplierparts based on the supplier part number. For users with
+edit part permission a panel called "Automatic Supplier parts" is shown. Here
+you can select the supplier and add the exact supplier part number. The plugin
+will create a corresponding  supplierpart. I can fill the following part fields automatically:
+
+- Supplier part number
+- URL
+- Package when available
+- Lifecycle status
+- Minimum order
+- Description
+
+If the supplier does not provide information for a field it it left empty.
 
 ## How it works
 
@@ -227,12 +242,12 @@ and visible to, at least every admin. All users who use the plugin will have the
 keys. We use a team key to solve this.
 
 ### Missing DigiKey features
-Digikey allows more features like customer ID and list owners. These are not implemented so far. 
+Digikey allows more features like customer ID and list owners. These are not implemented so far.
 The plugin supports just a single Digikey organization and user. Some APIs require a createdBy
-value to be set. xxxx works fine so far. 
+value to be set. xxxx works fine so far.
 
 ### https Callback
-The OAuto callback setting in your Digikey WEB account allows only https. http is not allowed. 
+The OAuto callback setting in your Digikey WEB account allows only https. http is not allowed.
 This is usually not a problem in production environments. However the development server
 usually runs http. But InvenTree has the required stuff for https on board. I just changed
 the runserver to runsslserver in tasks.py.
