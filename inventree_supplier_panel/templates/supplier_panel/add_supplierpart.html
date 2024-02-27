@@ -27,23 +27,10 @@ async function SelectCompany(){
 {% endif %}
 
 <table class='table table-condensed'>
-	    <form>
-<thead>
-    <tr>
-	<td> {% trans "Name" %} </td>
-	<td> {% trans "Data" %} </td>
-    </tr>
-</thead>
+<form>
 <tbody>
     <tr>
-        <td> Supplier part number</td>
-        <td> 
-            <input id="sku" type="text" value="">
-        </td>
-    </tr>
-
-    <tr>
-        <td> Supplier </td>
+        <td> Select Supplier </td>
         <td> 
 	    <select id="supplier">
 		{% for supplier,data in plugin.registered_suppliers.items %}
@@ -52,6 +39,12 @@ async function SelectCompany(){
                 {% endif %}
 		{% endfor %}
 	    </select>
+        </td>
+    </tr>
+    <tr>
+        <td> Exact supplier part number from suppliers WEB page</td>
+        <td> 
+            <input id="sku" type="text" value="">
         </td>
     </tr>
 </tbody>
