@@ -11,6 +11,8 @@ class MetaAccess():
     def set_value(inventree_object, app, key, value):
         print('---->',app,key,value)
         data=inventree_object.metadata
+        if data == None:
+            data = {}
         print('out    ',data)
         if app in data:
             app_data=data[app]
