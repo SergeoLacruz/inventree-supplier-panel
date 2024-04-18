@@ -503,6 +503,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return(token)
 
 #---------------------------- receive_authcode ---------------------------------------
+# The redirect_uri is just a string that has to be there. The content is ignored by 
+# Digikey
+
     def receive_authcode(self, request):
         auth_code = request.GET.get('code')
         url = 'https://api.digikey.com/v1/oauth2/token'
