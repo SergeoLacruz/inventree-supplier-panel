@@ -116,12 +116,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             pass
         if isinstance(view, PurchaseOrderDetail):
             order = view.get_object()
-            HasPermission = (check_user_role(view.request.user, 'purchase_order', 'change')
-                             or check_user_role(view.request.user, 'purchase_order', 'delete')
-                             or check_user_role(view.request.user, 'purchase_order', 'add'))
+            has_permission = (check_user_role(view.request.user, 'purchase_order', 'change')
+                              or check_user_role(view.request.user, 'purchase_order', 'delete')
+                              or check_user_role(view.request.user, 'purchase_order', 'add'))
 
             for s in self.registered_suppliers:
-                if order.supplier.pk == self.registered_suppliers[s]['pk'] and HasPermission:
+                if order.supplier.pk == self.registered_suppliers[s]['pk'] and has_permission:
                     if (order.pk != self.PurchaseOrderPK):
                         self.cart_content = []
                     panels.append({
@@ -130,13 +130,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                         'content_template': self.registered_suppliers[s]['po_template'],
                     })
         if isinstance(view, PartDetail):
-            HasPermission = (check_user_role(view.request.user, 'part', 'change')
-                             or check_user_role(view.request.user, 'part', 'delete')
-                             or check_user_role(view.request.user, 'part', 'add'))
+            has_permission = (check_user_role(view.request.user, 'part', 'change')
+                              or check_user_role(view.request.user, 'part', 'delete')
+                              or check_user_role(view.request.user, 'part', 'add'))
             show_panel = False
             for s in self.registered_suppliers:
                 show_panel = show_panel or self.registered_suppliers[s]['is_registered']
-            if HasPermission and show_panel:
+            if has_permission and show_panel:
                 panels.append({
                     'title': 'Automatic Supplier parts',
                     'icon': 'fa-user',
@@ -150,7 +150,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             re_path(r'^digikeytoken/', self.receive_authcode, name='digikeytoken'),
 
             # Now for the plugin
-            re_path(r'transfercart/(?P<pk>\d+)/', self.TransferCart, name='transfer-cart'),
+            re_path(r'transfercart/(?P<pk>\d+)/', self.transfer_cart, name='transfer-cart'),
             re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
         ]
 
@@ -159,15 +159,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         proxy_con = os.getenv('PROXY_CON')
         proxy_url = os.getenv('PROXY_URL')
         if proxy_con and proxy_url:
-            Proxies = {proxy_con: proxy_url}
+            proxies = {proxy_con: proxy_url}
         elif self.get_setting('PROXY_CON') != '' and self.get_setting('PROXY_URL') != '':
-            Proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
+            proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
         else:
-            Proxies = {}
+            proxies = {}
         try:
             response = requests.post(path,
                                      verify=False,
-                                     proxies=Proxies,
+                                     proxies=proxies,
                                      data=post_data,
                                      timeout=5,
                                      headers=headers
@@ -185,15 +185,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         proxy_con = os.getenv('PROXY_CON')
         proxy_url = os.getenv('PROXY_URL')
         if proxy_con and proxy_url:
-            Proxies = {proxy_con: proxy_url}
+            proxies = {proxy_con: proxy_url}
         elif self.get_setting('PROXY_CON') != '' and self.get_setting('PROXY_URL') != '':
-            Proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
+            proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
         else:
-            Proxies = {}
+            proxies = {}
         try:
             response = requests.get(path,
                                     verify=False,
-                                    proxies=Proxies,
+                                    proxies=proxies,
                                     timeout=5,
                                     headers=headers
                                     )
@@ -260,7 +260,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                          }
         self.status_code = 200
         self.message = 'OK'
-        MetaAccess.set_value(order, self.NAME, 'MouserCartKey', response['CartKey'])
+        MetaAccess.set_value(self, order, self.NAME, 'MouserCartKey', response['CartKey'])
         return (shopping_cart)
 
 # --------------------------- get_partdata ------------------------------------
@@ -287,11 +287,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if response['Errors'] != []:
             self.status_code = response['Errors']
             return (part_data)
-        NumberOfResults = int(response['SearchResults']['NumberOfResult'])
-        if NumberOfResults == 0:
+        number_of_results = int(response['SearchResults']['NumberOfResult'])
+        if number_of_results == 0:
             self.status_code = 'Part not found: ' + sku
             return (part_data)
-        for i in range(0, NumberOfResults):
+        for i in range(0, number_of_results):
             part_data['SKU'] = response['SearchResults']['Parts'][i]['MouserPartNumber']
             part_data['MPN'] = response['SearchResults']['Parts'][i]['ManufacturerPartNumber']
             part_data['URL'] = response['SearchResults']['Parts'][i]['ProductDetailUrl']
@@ -306,16 +306,16 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # ------------------------------- get_mouser_package --------------------------
     # Extracts the available packages from the Mouser part data json
-    def get_mouser_package(self, PartData):
-        Package = ''
+    def get_mouser_package(self, part_data):
+        package = ''
         try:
-            Attributes = PartData['ProductAttributes']
+            attributes = part_data['ProductAttributes']
         except Exception:
             return None
-        for Att in Attributes:
-            if Att['AttributeName'] == 'Verpackung':
-                Package = Package + Att['AttributeValue'] + ', '
-        return (Package)
+        for att in attributes:
+            if att['AttributeName'] == 'Verpackung':
+                package = package + att['AttributeValue'] + ', '
+        return (package)
 
 # The Digikey part
 # digikey has no shopping cart API. So we create a list using the MyLists API.
@@ -362,7 +362,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    })
         shopping_cart = {'MerchandiseTotal': merchandise_total,
                          'CartItems': cart_items,
-                         'cart_key': MetaAccess.get_value(order, self.NAME, 'DigiKeyListName'),
+                         'cart_key': MetaAccess.get_value(self, order, self.NAME, 'DigiKeyListName'),
                          'currency_code': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
                          }
         self.status_code = 200
@@ -436,7 +436,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     def create_digikey_cart(self, order):
         cart_data = {}
-        list_name = MetaAccess.get_value(order, self.NAME, 'DigiKeyListName')
+        list_name = MetaAccess.get_value(self, order, self.NAME, 'DigiKeyListName')
         if list_name is None:
             list_name = order.reference + '-00'
         version = int(list_name[len(list_name) - 2:]) + 1
@@ -453,7 +453,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 cart_data['ID'] = ''
                 self.message = 'No valid list name found within 20 attempts'
                 return cart_data
-        MetaAccess.set_value(order, self.NAME, 'DigiKeyListName', list_name)
+        MetaAccess.set_value(self, order, self.NAME, 'DigiKeyListName', list_name)
         url = 'https://api.digikey.com/mylists/v1/lists'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
@@ -534,10 +534,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             print('\033[31m\033[1mReceive access token FAILED\033[0m')
             return HttpResponse(response.content)
 
-# --------------------------- TransferCart ------------------------------------
+# --------------------------- transfer_cart ------------------------------------
 # This is called when the button is pressed and does most of the work.
 
-    def TransferCart(self, request, pk):
+    def transfer_cart(self, request, pk):
 
         self.PurchaseOrderPK = int(pk)
         order = PurchaseOrder.objects.filter(id=pk).all()[0]
@@ -553,11 +553,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             return HttpResponse('Error')
 
         # Now we transfer the actual prices back into the PO
-        for POItem in order.lines.all():
-            for Item in self.cart_content['CartItems']:
-                if POItem.part.SKU == Item['SKU']:
-                    POItem.purchase_price = Item['UnitPrice']
-                    POItem.save()
+        for po_item in order.lines.all():
+            for item in self.cart_content['CartItems']:
+                if po_item.part.SKU == item['SKU']:
+                    po_item.purchase_price = item['UnitPrice']
+                    po_item.save()
         return HttpResponse('OK')
 
 # ---------------------------- add_supplierpart -------------------------------

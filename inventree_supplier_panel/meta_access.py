@@ -1,6 +1,6 @@
 class MetaAccess():
 
-    def get_value(inventree_object, app, key):
+    def get_value(self, inventree_object, app, key):
         try:
             value = inventree_object.metadata[app][key]
         except Exception:
@@ -8,7 +8,7 @@ class MetaAccess():
         print('<----', app, key, value)
         return (value)
 
-    def set_value(inventree_object, app, key, value):
+    def set_value(self, inventree_object, app, key, value):
         print('---->', app, key, value)
         data = inventree_object.metadata
         if data is None:
