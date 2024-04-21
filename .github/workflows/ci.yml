@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  style-python:
+    name: "💄 Style: python"
+    #    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install style check dependencies
+        run: |
+          pip install flake8==7.0.0
+          pip install pep8-naming==0.13.3
+
+      - name: Check style
+        run: |
+          flake8 . --ignore=E501,W503
+
+  publish:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [style-python]
+    name: 📦 Publish to PyPi
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/inventree-supplier-panel
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4 
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build dependencies
+        run: pip install --upgrade wheel setuptools twine build
+
+      - name: Build pip package
+        run: python3 -m build
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
