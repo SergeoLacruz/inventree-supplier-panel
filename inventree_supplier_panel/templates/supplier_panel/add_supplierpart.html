@@ -31,7 +31,7 @@ async function SelectCompany(){
 <tbody>
     <tr>
         <td> Select Supplier </td>
-        <td> 
+        <td>
 	    <select id="supplier">
 		{% for supplier,data in plugin.registered_suppliers.items %}
                 {% if data.is_registered == True %}
@@ -43,7 +43,7 @@ async function SelectCompany(){
     </tr>
     <tr>
         <td> Exact supplier part number from suppliers WEB page</td>
-        <td> 
+        <td>
             <input id="sku" type="text" value="">
         </td>
     </tr>

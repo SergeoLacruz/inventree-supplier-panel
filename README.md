@@ -13,9 +13,10 @@ The plugin also helps to create supplierparts based on the supplier part number.
 Actually the plugin supports two suppliers: Mouser and Digikey.
 
 ## Installation
+The plugin is on pypi. You can install it by just calling:
 
 ```
-pip install git+https://github.com/SergeoLacruz/inventree-supplier-panel
+pip install inventree-supplier-panel
 ```
 
 ## Configuration
@@ -166,7 +167,7 @@ tokens live time. This also refreshes the refresh token. So you are save when
 you use the plugin ate least once in 90 days. In case the token gets bad you need to
 create a fresh set using the token button again.
 
-If you are confused now read the documentation on the Digikey WEB page for more details. 
+If you are confused now read the documentation on the Digikey WEB page for more details.
 
 #### MyLists
 Digikey does not have such a simple shopping cart API. The plugin uses the MyLists API.
