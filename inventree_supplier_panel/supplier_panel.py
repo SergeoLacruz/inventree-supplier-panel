@@ -136,7 +136,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             show_panel = False
             for s in self.registered_suppliers:
                 show_panel = show_panel or self.registered_suppliers[s]['is_registered']
-            if has_permission and show_panel:
+            part = view.get_object()
+            if has_permission and show_panel and part.purchaseable:
                 panels.append({
                     'title': 'Automatic Supplier parts',
                     'icon': 'fa-user',

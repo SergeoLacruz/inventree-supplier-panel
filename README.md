@@ -36,7 +36,7 @@ Place here your Mouser key for manipulating shopping carts. You find it in your 
 This is the client ID and the client secret that has been generated in the Digkey API admin WEB portal.
 Copy it from there to the InvenTree settings.
 
-### Digikey token and Digikey refrech token
+### Digikey token and Digikey refresh token
 These fields are filled automatically. The Digikey API requires two tokens with different life times.
 Please refer to the Digikey section for more information.
 
