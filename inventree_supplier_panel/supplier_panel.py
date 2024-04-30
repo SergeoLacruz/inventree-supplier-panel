@@ -510,17 +510,16 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (token)
 
 # --------------------------- receive_authcode --------------------------------
-# The redirect_uri is just a string that has to be there. The content is
-# ignored by Digikey
 
     def receive_authcode(self, request):
         auth_code = request.GET.get('code')
         url = 'https://api.digikey.com/v1/oauth2/token'
+        redirect_uri = InvenTreeSetting.get_setting('INVENTREE_BASE_URL') + '/' + self.base_url + 'digikeytoken/'
         url_data = {
             'code': auth_code,
             'client_id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'client_secret': self.get_setting('DIGIKEY_CLIENT_SECRET'),
-            'redirect_uri': 'https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/',
+            'redirect_uri': redirect_uri,
             'grant_type': 'authorization_code'
         }
         header = {}
