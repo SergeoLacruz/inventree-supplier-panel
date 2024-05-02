@@ -156,11 +156,13 @@ a token and a refresh token. The key gets bad after 60 seconds.
 The token is used for each call to a Digikey API. It is good for 30 minutes. It has to
 be refreshed using the refresh token. This one is valid for 90 days.
 
-The plugin has a button in the panel that initiates the first step. It opens a browser
+The plugin has a button in the settings that initiates the first step. It opens a browser
 where you enter your credentials. When the OAuth callback is properly set the URL
 ...plugin/suppliercart/digikeytoken/ is called. This triggers a call to
 https://api.digikey.com/v1/oauth2/token from where the plugin get the tokens. The tokens
 are stored in the plugin setting area. Do not change them manually.
+Make sure that the Base-URL is properly set in the InvenTree server settings. The
+plugin constructs the authentication callback using this. 
 
 Each time you transfer a PO the refresh token is called independently from the
 tokens live time. This also refreshes the refresh token. So you are save when

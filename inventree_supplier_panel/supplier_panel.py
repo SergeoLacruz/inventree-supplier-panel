@@ -89,7 +89,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # Create some help
     def get_settings_content(self, request):
-        return """
+        client_id = self.get_setting('DIGIKEY_CLIENT_ID')
+        callback_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL') + '/' + self.base_url
+        url = 'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
+        return f"""
         <p>Setup:</p>
         <ol>
         <li>Read the <a href="https://github.com/SergeoLacruz/inventree-supplier-panel"> docu </a> on github</li>
@@ -97,13 +100,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         <li>Put all required keys into settings</li>
         <li>Enjoy</li>
         <li>Remove the shopping carts regularly from your Mouser account</li>
+        <a class="btn btn-dark" onclick="window.open('{ url }','name','width=1000px,height=800px')"">
+         Create Token
+        </a>
         """
 
 # Create the panel that will display on the PurchaseOrder view,
     def get_custom_panels(self, view, request):
         panels = []
-        self.digikey_client_id = self.get_setting('DIGIKEY_CLIENT_ID')
-        self.callback_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL') + '/' + self.base_url
         try:
             self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
             self.registered_suppliers['Mouser']['is_registered'] = True
@@ -319,8 +323,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (package)
 
 # The Digikey part
-# digikey has no shopping cart API. So we create a list using the MyLists API.
-# The list can easily be transfered into an order in the web interface.
+# Digikey has no shopping cart API. So we create a list using the MyLists API.
+# The list can easily be transferred into an order in the web interface.
 # ------------------------- update_digikey_cart -------------------------------
     def update_digikey_cart(self, order, list_id):
         url = f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
@@ -431,9 +435,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (cart_data)
 
 # Digikey does not have a cart API. So we create a list using the MyLists API
-# the list can easily be converted to a shopping cart  or a quote in the
-# WEB UI of Digikey. However the List API is not so simple the handle becase
-# all the list names are stored.
+# The list can easily be converted to a shopping cart or a quote in the
+# WEB UI of Digikey. However the List API is not so simple to handle because
+# all the list names are stored and blocked for future use. Even deleted ones.. 
 
     def create_digikey_cart(self, order):
         cart_data = {}
@@ -529,7 +533,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             response_data = response.json()
             self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
             self.set_setting('DIGIKEY_REFRESH_TOKEN', response_data['refresh_token'])
-            return HttpResponse('OK')
+            return HttpResponse('New Digikey token successfully received')
         else:
             print('\033[31m\033[1mReceive access token FAILED\033[0m')
             return HttpResponse(response.content)
