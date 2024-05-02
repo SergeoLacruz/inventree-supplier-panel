@@ -437,7 +437,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # Digikey does not have a cart API. So we create a list using the MyLists API
 # The list can easily be converted to a shopping cart or a quote in the
 # WEB UI of Digikey. However the List API is not so simple to handle because
-# all the list names are stored and blocked for future use. Even deleted ones.. 
+# all the list names are stored and blocked for future use. Even deleted ones..
 
     def create_digikey_cart(self, order):
         cart_data = {}
