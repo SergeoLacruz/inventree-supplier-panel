@@ -89,8 +89,23 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # Create some help
     def get_settings_content(self, request):
+        try:
+            self.get_setting('DIGIKEY_PK')
+            digikey_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
+        except Exception:
+            digikey_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
+        try:
+            self.get_setting('MOUSER_PK')
+            mouser_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
+        except Exception:
+            mouser_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
         client_id = self.get_setting('DIGIKEY_CLIENT_ID')
-        callback_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL') + '/' + self.base_url
+        base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
+        if base_url == '':
+            base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Missing</span>'
+        else:
+            base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
+        callback_url = base_url + '/' + self.base_url
         url = 'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
         return f"""
         <p>Setup:</p>
@@ -99,8 +114,24 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         <li>Enable the plugin</li>
         <li>Put all required keys into settings</li>
         <li>Enjoy</li>
-        <li>Remove the shopping carts regularly from your Mouser account</li>
-        <a class="btn btn-dark" onclick="window.open('{ url }','name','width=1000px,height=800px')"">
+        <li>Remove the shopping carts and lists regularly from your accounts</li>
+        </ol>
+        <p>Status:</p>
+        <table class='table table-condensed'>
+           <tr>
+           <td>Mouser</td><td>{mouser_enabled}</td>
+           </tr>
+           <tr>
+           <td>Digikey</td><td>{digikey_enabled}</td>
+           </tr>
+           <tr>
+           <td>Server Base URL</td><td>{base_url_state}</td>
+           </tr>
+           <tr>
+           <td>Callback URL (Add this to your Digikey account)</td><td>{callback_url}</td>
+           </tr>
+        </table>
+        <a class="btn btn-dark" onclick="window.open('{url}','name','width=1000px,height=800px')"">
          Create Token
         </a>
         """
