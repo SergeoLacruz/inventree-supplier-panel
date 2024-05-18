@@ -132,7 +132,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
            </tr>
         </table>
         <a class="btn btn-dark" onclick="window.open('{url}','name','width=1000px,height=800px')"">
-         Create Token
+         Create Digikey Token
         </a>
         """
 
