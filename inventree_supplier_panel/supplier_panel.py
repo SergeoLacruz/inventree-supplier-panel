@@ -103,6 +103,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
         if base_url == '':
             base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Missing</span>'
+        elif base_url[0:5] != 'https':
+            base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Server does not run https</span>'
         else:
             base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
         callback_url = base_url + '/' + self.base_url
