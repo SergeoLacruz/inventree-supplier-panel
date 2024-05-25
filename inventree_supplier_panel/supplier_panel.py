@@ -600,15 +600,15 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # ---------------------------- add_supplierpart -------------------------------
     def add_supplierpart(self, request):
         data = json.loads(request.body)
+        part = Part.objects.filter(id=data['pk']).all()[0]
+        supplier = Company.objects.filter(id=data['supplier']).all()[0]
+        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if (data['sku'] == ''):
             self.status_code = 'Please provide part number'
             return HttpResponse('OK')
         self.part_data = self.get_partdata(data['supplier'], data['sku'])
         if (self.status_code != 200):
             return HttpResponse('OK')
-        part = Part.objects.filter(id=data['pk']).all()[0]
-        supplier = Company.objects.filter(id=data['supplier']).all()[0]
-        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
             self.status_code = 'Part has no manufacturer part'
             return HttpResponse('OK')
