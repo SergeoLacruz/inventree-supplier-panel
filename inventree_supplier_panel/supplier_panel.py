@@ -22,7 +22,6 @@ import os
 
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
-    # Define data that is displayed on the panel
     PurchaseOrderPK = 0
 
     NAME = "SupplierCart"
@@ -87,7 +86,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         },
     }
 
-# Create some help
+# ----------------------------------------------------------------------------
+# Here we check the settings and show som status messages. We also construct
+# the Digikey callback_url that needst to put into the Digikey web page.
+# If the pk of the supplier is not set ein tne settings, the supplier is
+# disabled. The button for Digikey token creation is also here.
+
     def get_settings_content(self, request):
         try:
             self.get_setting('DIGIKEY_PK')
@@ -108,7 +112,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         else:
             base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
         callback_url = base_url + '/' + self.base_url
-        url = 'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
+        url = f'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id={client_id}&redirect_uri={callback_url}digikeytoken/'
         return f"""
         <p>Setup:</p>
         <ol>
@@ -138,7 +142,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         </a>
         """
 
-# Create the panel that will display on the PurchaseOrder view,
+# ----------------------------------------------------------------------------
+# Create the panel that will display on the PurchaseOrder view.
+
     def get_custom_panels(self, view, request):
         panels = []
         try:
@@ -151,6 +157,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.registered_suppliers['Digikey']['is_registered'] = True
         except Exception:
             pass
+
+        # For purchase orders: PO transfer
         if isinstance(view, PurchaseOrderDetail):
             order = view.get_object()
             has_permission = (check_user_role(view.request.user, 'purchase_order', 'change')
@@ -166,6 +174,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                         'icon': 'fa-user',
                         'content_template': self.registered_suppliers[s]['po_template'],
                     })
+
+        # For parts: Suppliet part creation
         if isinstance(view, PartDetail):
             has_permission = (check_user_role(view.request.user, 'part', 'change')
                               or check_user_role(view.request.user, 'part', 'delete')
@@ -192,7 +202,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
         ]
 
-# --------------------- post_request and get_request wrappers -----------------
+# ----------------------------------------------------------------------------
+# Wrappers around the requests for better error handling
+
     def post_request(self, post_data, path, headers):
         proxy_con = os.getenv('PROXY_CON')
         proxy_url = os.getenv('PROXY_URL')
@@ -213,6 +225,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         except Exception as e:
             self.status_code = e.args
             raise ConnectionError
+        if self.debug:
+            print('SPP:', response)
+            print('SPP:', response.content)
         if response.status_code != 200:
             self.status_code = response.status_code
             self.message = response.content
@@ -238,6 +253,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         except Exception as e:
             self.status_code = e.args
             raise ConnectionError
+        if self.debug:
+            print('SPP:', response)
+            print('SPP:', response.content)
         if response.status_code != 200:
             self.status_code = response.status_code
             self.message = response.content
@@ -245,7 +263,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (response)
 
 # ------------------------ update_cart ----------------------------------
-# The Mouser part
+# The Mouser part.
 # Actually we send an empty CartKey. So Mouser creates a new key each time
 # the button is pressed. This should be improved in future.
 
@@ -261,11 +279,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             "CartKey": cart_key,
             "CartItems": cart_items
         }
-#        url= 'https://api.mouser.com/api/v001/cart?apiKey='+self.get_setting('MOUSERKEY')+'&countryCode=DE'
         url = 'https://api.mouser.com/api/v001/cart/items/insert?apiKey=' + self.get_setting('MOUSERKEY') + '&countryCode=' + country_code
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = self.post_request(json.dumps(cart), url, header)
         response = response.json()
+
+        # Return with error if response was not OK
         if response['Errors'] != []:
             self.status_code = 'Mouser answered: '
             self.message = response['Errors'][0]['Message']
@@ -279,7 +298,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    'QuantityAvailable': p['MouserATS'],
                                    'UnitPrice': p['UnitPrice'],
                                    'ExtendedPrice': p['ExtendedPrice'],
-                                   'CurrencyCode': response['CurrencyCode'],
                                    'Error': ''
                                    })
             else:
@@ -291,6 +309,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    'ExtendedPrice': p['ExtendedPrice'],
                                    'Error': p['Errors'][0]['Message']
                                    })
+
+        # Here we get the currency_code from the Mouser response
         shopping_cart = {'MerchandiseTotal': response['MerchandiseTotal'],
                          'CartItems': cart_items,
                          'cart_key': response['CartKey'],
@@ -302,6 +322,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (shopping_cart)
 
 # --------------------------- get_partdata ------------------------------------
+# This is just the wrapper that selects the proper supplier dependant function
     def get_partdata(self, supplier, sku):
 
         for s in self.registered_suppliers:
@@ -317,7 +338,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                         "partSearchOptions": "exact"
                                         }
                 }
-#        country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
         url = 'https://api.mouser.com/api/v1.0/search/partnumber?apiKey=' + self.get_setting('MOUSERSEARCHKEY')
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = self.post_request(json.dumps(part), url, header)
@@ -343,7 +363,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         return (part_data)
 
 # ------------------------------- get_mouser_package --------------------------
-    # Extracts the available packages from the Mouser part data json
+# Extracts the available packages from the Mouser part data json
     def get_mouser_package(self, part_data):
         package = ''
         try:
@@ -355,10 +375,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 package = package + att['AttributeValue'] + ', '
         return (package)
 
+# ------------------------------------------------------------------
 # The Digikey part
 # Digikey has no shopping cart API. So we create a list using the MyLists API.
 # The list can easily be transferred into an order in the web interface.
-# ------------------------- update_digikey_cart -------------------------------
+
     def update_digikey_cart(self, order, list_id):
         url = f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
         header = {'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
@@ -372,8 +393,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                'Quantities': [{'Quantity': int(item.quantity)}],
                                'CustomerReference': item.part.part.IPN
                                })
+
         # The post equest just generates the list in the Digikey cloud
         self.post_request(json.dumps(cart_items), url, header)
+
         # Now we get the parts from the generate list
         parts_in_list = self.get_parts_in_list(list_id)
         cart_items = []
@@ -398,6 +421,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                    'ExtendedPrice': 0,
                                    'Error': 'Partnumber not found at Digikey',
                                    })
+
+        # Digikey does not return a currency code. So we take the one from the settings.
         shopping_cart = {'MerchandiseTotal': merchandise_total,
                          'CartItems': cart_items,
                          'cart_key': MetaAccess.get_value(self, order, self.NAME, 'DigiKeyListName'),
@@ -624,7 +649,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                     )
         return HttpResponse('OK')
 
-# ---------------------------- Define the supplers ----------------------------
+# ---------------------------- Define the suppliers ----------------------------
+    debug = False
     registered_suppliers = {'Mouser': {'pk': 0,
                                        'name': 'Mouser',
                                        'po_template': 'supplier_panel/mouser.html',
