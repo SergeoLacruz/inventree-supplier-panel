@@ -111,7 +111,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Server does not run https</span>'
         else:
             base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
-        callback_url = base_url + '/' + self.base_url
+        callback_url = f'{base_url}/{self.base_url}digikeytoken/' 
         url = f'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id={client_id}&redirect_uri={callback_url}digikeytoken/'
         return f"""
         <p>Setup:</p>
