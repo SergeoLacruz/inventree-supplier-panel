@@ -136,7 +136,7 @@ In this example 192.168.1.40:8123 is the local IP address and port where my
 InvenTree development server runs. Place here the appropriate address. The 
 settings page of the plugin gives some help: 
 
-![setup](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/setop.png)
+![setup](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/setup.png)
 
 The Callback URL is what you need to put into the Digikey page. 
 
