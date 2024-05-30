@@ -133,7 +133,13 @@ https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
 ```
 
 In this example 192.168.1.40:8123 is the local IP address and port where my
-InvenTree development server runs. Place here the appropriate address.
+InvenTree development server runs. Place here the appropriate address. The 
+settings page of the plugin gives some help: 
+
+![setup](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/setop.png)
+
+The Callback URL is what you need to put into the Digikey page. 
+
 In Production products section make sure that Product information and MyLists is activated.
 
 In the View tab of your app you find the Client-ID and the Client-Secret. Place those in
