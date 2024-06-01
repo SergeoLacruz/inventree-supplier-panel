@@ -19,7 +19,7 @@ from urllib.parse import quote
 import requests
 import json
 import os
-import locale
+import re
 
 
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
@@ -372,11 +372,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     # We need a Mouser specific modification to the price answer because they put
     # funny things inside like an EURO sign and they use , instead of .
     def reformat_mouser_price(self, price):
-        locale.setlocale(locale.LC_NUMERIC, 'de_DE.UTF-8')
-        locale.setlocale(locale.LC_MONETARY, 'de_DE.UTF-8')
-        conv = locale.localeconv()
-        new_price = locale.atof(price.strip(conv['currency_symbol']))
-        return new_price
+        price = price.replace(',', '.')
+        non_decimal = re.compile(r'[^\d.]+')
+        price = float(non_decimal.sub('', price))
+        return price
 
 # ------------------------------- get_mouser_package --------------------------
 # Extracts the available packages from the Mouser part data json
@@ -472,12 +471,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         # replace invalid characters in the partnumber
         sku = quote(sku)
         url = f'https://api.digikey.com/Search/v3/Products/{sku}'
+        country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'Content-Type': 'application/json',
             'X-DIGIKEY-Locale-Currency': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
-            'X-DIGIKEY-Locale-Site': 'DE',
+            'X-DIGIKEY-Locale-Site': country_code,
             'X-DIGIKEY-Locale-Language': 'EN'
         }
         response = self.get_request(url, headers=header)
