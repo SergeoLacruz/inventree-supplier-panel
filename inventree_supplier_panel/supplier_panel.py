@@ -8,6 +8,7 @@ from part.models import Part
 from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
 from company.models import Company, ManufacturerPart, SupplierPart
+from company.models import SupplierPriceBreak
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
 from users.models import check_user_role
@@ -18,6 +19,7 @@ from urllib.parse import quote
 import requests
 import json
 import os
+import locale
 
 
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
@@ -349,18 +351,32 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if number_of_results == 0:
             self.status_code = 'Part not found: ' + sku
             return (part_data)
-        for i in range(0, number_of_results):
-            part_data['SKU'] = response['SearchResults']['Parts'][i]['MouserPartNumber']
-            part_data['MPN'] = response['SearchResults']['Parts'][i]['ManufacturerPartNumber']
-            part_data['URL'] = response['SearchResults']['Parts'][i]['ProductDetailUrl']
-            part_data['lifecycle_status'] = response['SearchResults']['Parts'][i]['LifecycleStatus']
-            part_data['pack_quantity'] = response['SearchResults']['Parts'][i]['Mult']
-            part_data['description'] = response['SearchResults']['Parts'][i]['Description']
-            part_data['package'] = self.get_mouser_package(response['SearchResults']['Parts'][i])
-            part_data['price_breaks'] = response['SearchResults']['Parts'][i]['PriceBreaks']
+        if number_of_results > 1:
+            self.status_code = 'Multiple parts found. Check SKU ' + sku
+            return (part_data)
+        part_data['SKU'] = response['SearchResults']['Parts'][0]['MouserPartNumber']
+        part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
+        part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
+        part_data['lifecycle_status'] = response['SearchResults']['Parts'][0]['LifecycleStatus']
+        part_data['pack_quantity'] = response['SearchResults']['Parts'][0]['Mult']
+        part_data['description'] = response['SearchResults']['Parts'][0]['Description']
+        part_data['package'] = self.get_mouser_package(response['SearchResults']['Parts'][0])
+        part_data['price_breaks'] = []
+        for pb in response['SearchResults']['Parts'][0]['PriceBreaks']:
+            new_price = self.reformat_mouser_price(pb['Price'])
+            part_data['price_breaks'].append({'Quantity': pb['Quantity'], 'Price': new_price, 'Currency': pb['Currency']})
         self.status_code = 200
         self.message = 'OK'
         return (part_data)
+
+    # We need a Mouser specific modification to the price answer because they put
+    # funny things inside like an EURO sign and they use , instead of .
+    def reformat_mouser_price(self, price):
+        locale.setlocale(locale.LC_NUMERIC, 'de_DE.UTF-8')
+        locale.setlocale(locale.LC_MONETARY, 'de_DE.UTF-8')
+        conv = locale.localeconv()
+        new_price = locale.atof(price.strip(conv['currency_symbol']))
+        return new_price
 
 # ------------------------------- get_mouser_package --------------------------
 # Extracts the available packages from the Mouser part data json
@@ -459,7 +475,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-DIGIKEY-Locale-Currency': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
+            'X-DIGIKEY-Locale-Site': 'DE',
+            'X-DIGIKEY-Locale-Language': 'EN'
         }
         response = self.get_request(url, headers=header)
         if not response:
@@ -473,6 +492,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
         part_data['description'] = response['DetailedDescription']
         part_data['package'] = ''
+        part_data['price_breaks'] = []
+        for pb in response['StandardPricing']:
+            part_data['price_breaks'].append({'Quantity': pb['BreakQuantity'], 'Price': pb['UnitPrice'], 'Currency': response['SearchLocaleUsed']['Currency']})
         for p in response['Parameters']:
             if p['ParameterId'] == 7:
                 part_data['package'] = p['Value']
@@ -625,28 +647,32 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # ---------------------------- add_supplierpart -------------------------------
     def add_supplierpart(self, request):
         data = json.loads(request.body)
-        part = Part.objects.filter(id=data['pk']).all()[0]
-        supplier = Company.objects.filter(id=data['supplier']).all()[0]
+        part = Part.objects.filter(id=data['pk'])[0]
+        supplier = Company.objects.filter(id=data['supplier'])[0]
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if (data['sku'] == ''):
             self.status_code = 'Please provide part number'
             return HttpResponse('OK')
-        self.part_data = self.get_partdata(data['supplier'], data['sku'])
-        if (self.status_code != 200):
-            return HttpResponse('OK')
         if len(manufacturer_part) == 0:
             self.status_code = 'Part has no manufacturer part'
             return HttpResponse('OK')
-        SupplierPart.objects.create(part=part,
-                                    supplier=supplier,
-                                    manufacturer_part=manufacturer_part[0],
-                                    SKU=self.part_data['SKU'],
-                                    link=self.part_data['URL'],
-                                    note=self.part_data['lifecycle_status'],
-                                    packaging=self.part_data['package'],
-                                    pack_quantity=self.part_data['pack_quantity'],
-                                    description=self.part_data['description'],
-                                    )
+        part_data = self.get_partdata(data['supplier'], data['sku'])
+        if (self.status_code != 200):
+            return HttpResponse('OK')
+        if self.debug:
+            print(part_data['price_breaks'])
+        sp = SupplierPart.objects.create(part=part,
+                                         supplier=supplier,
+                                         manufacturer_part=manufacturer_part[0],
+                                         SKU=part_data['SKU'],
+                                         link=part_data['URL'],
+                                         note=part_data['lifecycle_status'],
+                                         packaging=part_data['package'],
+                                         pack_quantity=part_data['pack_quantity'],
+                                         description=part_data['description'],
+                                         )
+        for pb in part_data['price_breaks']:
+            SupplierPriceBreak.objects.create(part=sp, quantity=pb['Quantity'], price=pb['Price'], price_currency=pb['Currency'])
         return HttpResponse('OK')
 
 # ---------------------------- Define the suppliers ----------------------------
