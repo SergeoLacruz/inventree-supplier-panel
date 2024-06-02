@@ -396,6 +396,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # The list can easily be transferred into an order in the web interface.
 
     def update_digikey_cart(self, order, list_id):
+        pack_types = {'TR': 'full reel', 'DKR': 'DigiReel', 'CT': 'cut tape', 'BAG': 'bulk'}
         url = f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts'
         header = {'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
                   'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
@@ -430,13 +431,17 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                        'Error': 'Minimum order quantity not reached',
                                        })
                 else:
+                    try:
+                        pack = pack_types[pack_option['PackType']]
+                    except Exception:
+                        pack = pack_option['PackType']
                     cart_items.append({'SKU': p['DigiKeyPartNumber'],
                                        'IPN': p['CustomerReference'],
                                        'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
                                        'QuantityAvailable': p['QuantityAvailable'],
                                        'UnitPrice': pack_option['CalculatedUnitPrice'],
                                        'ExtendedPrice': pack_option['ExtendedPrice'],
-                                       'Error': pack_option['PackType'],
+                                       'Error': pack,
                                        })
                     merchandise_total = merchandise_total + pack_option['ExtendedPrice']
             else:
