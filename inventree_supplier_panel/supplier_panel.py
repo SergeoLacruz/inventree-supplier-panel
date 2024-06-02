@@ -405,28 +405,40 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         cart_items = []
         for item in order.lines.all():
             cart_items.append({'RequestedPartNumber': item.part.SKU,
-                               'Quantities': [{'Quantity': int(item.quantity)}],
+                               'Quantities': [{'Quantity': int(item.quantity) * int(item.part.pack_quantity)}],
                                'CustomerReference': item.part.part.IPN
                                })
-
         # The post equest just generates the list in the Digikey cloud
         self.post_request(json.dumps(cart_items), url, header)
 
-        # Now we get the parts from the generate list
+        # Now we get the parts from the generated list
         parts_in_list = self.get_parts_in_list(list_id)
         cart_items = []
         merchandise_total = 0
         for p in parts_in_list['PartsList']:
             if p['DigiKeyPartNumber'] != '':
-                cart_items.append({'SKU': p['DigiKeyPartNumber'],
-                                   'IPN': p['CustomerReference'],
-                                   'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
-                                   'QuantityAvailable': p['QuantityAvailable'],
-                                   'UnitPrice': p['Quantities'][0]['PackOptions'][0]['CalculatedUnitPrice'],
-                                   'ExtendedPrice': p['Quantities'][0]['PackOptions'][0]['ExtendedPrice'],
-                                   'Error': p['Quantities'][0]['PackOptions'][0]['FormattedExtendedPrice'][0],
-                                   })
-                merchandise_total = merchandise_total + p['Quantities'][0]['PackOptions'][0]['ExtendedPrice']
+                for pack_option in p['Quantities'][0]['PackOptions']:
+                    if pack_option['DigiKeyPartNumber'] == p['DigiKeyPartNumber']:
+                        break
+                if pack_option['MinimumOrderQuantity'] > p['Quantities'][0]['QuantityRequested']:
+                    cart_items.append({'SKU': p['DigiKeyPartNumber'],
+                                       'IPN': p['CustomerReference'],
+                                       'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
+                                       'QuantityAvailable': p['QuantityAvailable'],
+                                       'UnitPrice': 0,
+                                       'ExtendedPrice': 0,
+                                       'Error': 'Minimum order quantity not reached',
+                                       })
+                else:
+                    cart_items.append({'SKU': p['DigiKeyPartNumber'],
+                                       'IPN': p['CustomerReference'],
+                                       'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
+                                       'QuantityAvailable': p['QuantityAvailable'],
+                                       'UnitPrice': pack_option['CalculatedUnitPrice'],
+                                       'ExtendedPrice': pack_option['ExtendedPrice'],
+                                       'Error': pack_option['PackType'],
+                                       })
+                    merchandise_total = merchandise_total + pack_option['ExtendedPrice']
             else:
                 cart_items.append({'SKU': p['RequestedPartNumber'],
                                    'IPN': p['CustomerReference'],
