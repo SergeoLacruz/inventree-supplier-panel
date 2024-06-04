@@ -191,10 +191,11 @@ Digikey requires a country code and a currency code. The plugin  uses the same t
 as mentioned in the Mouser section and transfers both to Digikey. Digikey sends back the
 list in the correct currency. Unfortunately the currency code is not sent back. The only
 thing Digikey sends is a currency symbol but no info if $ is USD, AUD or whatever kind of Dollar.
-The plugin shows the symbol in the table for control.
+Mouser does not allow to set the currency. Mouser selects the currency automatically
+based on the country where the request comes from. 
 
-## Automatically add supplierparts
-The plugin can add supplierparts based on the supplier part number. For users with
+## Automatically create supplierparts
+The plugin can create supplierparts based on the supplier part number. For users with
 edit part permission a panel called "Automatic Supplier parts" is shown. Here
 you can select the supplier and add the exact supplier part number. The plugin
 will create a corresponding  supplierpart. I can fill the following part fields automatically:
@@ -205,8 +206,9 @@ will create a corresponding  supplierpart. I can fill the following part fields 
 - Lifecycle status
 - Minimum order
 - Description
+- Price breaks
 
-If the supplier does not provide information for a field it it left empty.
+If the supplier does not provide information for a field it is left empty.
 
 ## How it works
 
