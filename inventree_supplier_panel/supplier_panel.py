@@ -11,14 +11,12 @@ from company.models import Company, ManufacturerPart, SupplierPart
 from company.models import SupplierPriceBreak
 from inventree_supplier_panel.version import PLUGIN_VERSION
 from inventree_supplier_panel.meta_access import MetaAccess
+from inventree_supplier_panel.request_wrappers import Wrappers
 from users.models import check_user_role
 from common.models import InvenTreeSetting
 
-from requests.exceptions import ConnectionError
 from urllib.parse import quote
-import requests
 import json
-import os
 import re
 
 
@@ -177,7 +175,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                         'content_template': self.registered_suppliers[s]['po_template'],
                     })
 
-        # For parts: Suppliet part creation
+        # For parts: Supplier part creation
         if isinstance(view, PartDetail):
             has_permission = (check_user_role(view.request.user, 'part', 'change')
                               or check_user_role(view.request.user, 'part', 'delete')
@@ -204,66 +202,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
         ]
 
-# ----------------------------------------------------------------------------
-# Wrappers around the requests for better error handling
-
-    def post_request(self, post_data, path, headers):
-        proxy_con = os.getenv('PROXY_CON')
-        proxy_url = os.getenv('PROXY_URL')
-        if proxy_con and proxy_url:
-            proxies = {proxy_con: proxy_url}
-        elif self.get_setting('PROXY_CON') != '' and self.get_setting('PROXY_URL') != '':
-            proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
-        else:
-            proxies = {}
-        try:
-            response = requests.post(path,
-                                     verify=False,
-                                     proxies=proxies,
-                                     data=post_data,
-                                     timeout=5,
-                                     headers=headers
-                                     )
-        except Exception as e:
-            self.status_code = e.args
-            raise ConnectionError
-        if self.debug:
-            print('SPP:', response)
-            print('SPP:', response.content)
-        if response.status_code != 200:
-            self.status_code = response.status_code
-            self.message = response.content
-            return (response)
-        return (response)
-
-    def get_request(self, path, headers):
-        proxy_con = os.getenv('PROXY_CON')
-        proxy_url = os.getenv('PROXY_URL')
-        if proxy_con and proxy_url:
-            proxies = {proxy_con: proxy_url}
-        elif self.get_setting('PROXY_CON') != '' and self.get_setting('PROXY_URL') != '':
-            proxies = {self.get_setting('PROXY_CON'): self.get_setting('PROXY_URL')}
-        else:
-            proxies = {}
-        try:
-            response = requests.get(path,
-                                    verify=False,
-                                    proxies=proxies,
-                                    timeout=5,
-                                    headers=headers
-                                    )
-        except Exception as e:
-            self.status_code = e.args
-            raise ConnectionError
-        if self.debug:
-            print('SPP:', response)
-            print('SPP:', response.content)
-        if response.status_code != 200:
-            self.status_code = response.status_code
-            self.message = response.content
-            return (response)
-        return (response)
-
 # ------------------------ update_cart ----------------------------------
 # The Mouser part.
 # Actually we send an empty CartKey. So Mouser creates a new key each time
@@ -283,7 +221,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         }
         url = 'https://api.mouser.com/api/v001/cart/items/insert?apiKey=' + self.get_setting('MOUSERKEY') + '&countryCode=' + country_code
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        response = self.post_request(json.dumps(cart), url, header)
+        response = Wrappers.post_request(self, json.dumps(cart), url, header)
         response = response.json()
 
         # Return with error if response was not OK
@@ -342,7 +280,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 }
         url = 'https://api.mouser.com/api/v1.0/search/partnumber?apiKey=' + self.get_setting('MOUSERSEARCHKEY')
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        response = self.post_request(json.dumps(part), url, header)
+        response = Wrappers.post_request(self, json.dumps(part), url, header)
         response = response.json()
         if response['Errors'] != []:
             self.status_code = response['Errors']
@@ -410,7 +348,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                'CustomerReference': item.part.part.IPN
                                })
         # The post equest just generates the list in the Digikey cloud
-        self.post_request(json.dumps(cart_items), url, header)
+        Wrappers.post_request(self, json.dumps(cart_items), url, header)
 
         # Now we get the parts from the generated list
         parts_in_list = self.get_parts_in_list(list_id)
@@ -473,7 +411,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'accept': 'application/json'
         }
-        response = self.get_request(url, headers=header)
+        response = Wrappers.get_request(self, url, headers=header)
         if not response:
             return (None)
         return (response.json())
@@ -497,7 +435,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'X-DIGIKEY-Locale-Site': country_code,
             'X-DIGIKEY-Locale-Language': 'EN'
         }
-        response = self.get_request(url, headers=header)
+        response = Wrappers.get_request(self, url, headers=header)
         if not response:
             return (None)
         print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
@@ -566,7 +504,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'ListName': list_name,
             'accept': 'application/json'
         }
-        response = self.post_request(json.dumps(url_data), url, headers=header)
+        response = Wrappers.post_request(self, json.dumps(url_data), url, headers=header)
         self.status_code = response.status_code
         cart_data['ID'] = response.json()
         self.message = 'success'
@@ -579,7 +517,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
             'accept': 'application/json'
         }
-        response = self.get_request(url, headers=header)
+        response = Wrappers.get_request(self, url, headers=header)
         return (response.content == b'true')
 
 # -------------------- Here starts the digikey token stuff --------------------
@@ -597,7 +535,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         }
         header = {}
         token = {}
-        response = self.post_request(url_data, url, headers=header)
+        response = Wrappers.post_request(self, url_data, url, headers=header)
         if not response:
             return (None)
         print('\033[32mToken refresh SUCCESS\033[0m')
@@ -624,7 +562,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'grant_type': 'authorization_code'
         }
         header = {}
-        response = self.post_request(url_data, url, headers=header)
+        response = Wrappers.post_request(self, url_data, url, headers=header)
         if response.status_code == 200:
             print('\033[32mAccess Token get SUCCESS\033[0m')
             response_data = response.json()
