@@ -90,7 +90,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # ----------------------------------------------------------------------------
 # Here we check the settings and show som status messages. We also construct
-# the Digikey callback_url that needst to put into the Digikey web page.
+# the Digikey redirect_uri that needs to put into the Digikey web page.
 # If the pk of the supplier is not set ein tne settings, the supplier is
 # disabled. The button for Digikey token creation is also here.
 
@@ -113,8 +113,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Server does not run https</span>'
         else:
             base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
-        callback_url = f'{base_url}/{self.base_url}digikeytoken/'
-        url = f'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id={client_id}&redirect_uri={callback_url}digikeytoken/'
+        redirect_uri = f'{base_url}/{self.base_url}digikeytoken/'
+        url = f'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
         return f"""
         <p>Setup:</p>
         <ol>
@@ -136,7 +136,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
            <td>Server Base URL</td><td>{base_url_state}</td>
            </tr>
            <tr>
-           <td>Callback URL (Add this to your Digikey account)</td><td>{callback_url}</td>
+           <td>Callback URL (Add this to your Digikey account)</td><td>{redirect_uri}</td>
            </tr>
         </table>
         <a class="btn btn-dark" onclick="window.open('{url}','name','width=1000px,height=800px')"">
@@ -233,7 +233,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if response.status_code != 200:
             self.status_code = response.status_code
             self.message = response.content
-            return (None)
+            return (response)
         return (response)
 
     def get_request(self, path, headers):
@@ -261,7 +261,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         if response.status_code != 200:
             self.status_code = response.status_code
             self.message = response.content
-            return (None)
+            return (response)
         return (response)
 
 # ------------------------ update_cart ----------------------------------
