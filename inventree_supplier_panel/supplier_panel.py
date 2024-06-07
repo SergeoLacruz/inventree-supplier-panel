@@ -604,13 +604,21 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         data = json.loads(request.body)
         part = Part.objects.filter(id=data['pk'])[0]
         supplier = Company.objects.filter(id=data['supplier'])[0]
-        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if (data['sku'] == ''):
             self.status_code = 'Please provide part number'
             return HttpResponse('OK')
+
+        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
             self.status_code = 'Part has no manufacturer part'
             return HttpResponse('OK')
+
+        supplier_parts = SupplierPart.objects.filter(part=data['pk'])
+        for sp in supplier_parts:
+            if sp.SKU == data['sku']:
+                self.status_code = 'Supplierpart with this SKU already exists'
+                return HttpResponse('OK')
+
         part_data = self.get_partdata(data['supplier'], data['sku'])
         if (self.status_code != 200):
             return HttpResponse('OK')
