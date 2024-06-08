@@ -283,14 +283,17 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         response = Wrappers.post_request(self, json.dumps(part), url, header)
         response = response.json()
         if response['Errors'] != []:
-            self.status_code = response['Errors']
+            self.status_code = 'Error, '
+            self.message = response['Errors']
             return (part_data)
         number_of_results = int(response['SearchResults']['NumberOfResult'])
         if number_of_results == 0:
-            self.status_code = 'Part not found: ' + sku
+            self.status_code = 'Error, '
+            self.message = 'Part not found: ' + sku
             return (part_data)
         if number_of_results > 1:
-            self.status_code = 'Multiple parts found. Check SKU ' + sku
+            self.status_code = 'Error, '
+            self.message = 'Multiple parts found. Check supplier part number: ' + sku
             return (part_data)
         part_data['SKU'] = response['SearchResults']['Parts'][0]['MouserPartNumber']
         part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']

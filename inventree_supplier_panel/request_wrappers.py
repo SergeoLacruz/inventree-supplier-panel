@@ -30,7 +30,7 @@ class Wrappers():
             self.status_code = response.status_code
             self.message = response.content
             return (response)
-        self.status_code = 200
+        self.status_code = response.status_code
         self.message = 'OK'
         return (response)
 
@@ -57,6 +57,6 @@ class Wrappers():
             self.status_code = response.status_code
             self.message = response.content
             return (response)
-        self.status_code = 200
+        self.status_code = response.status_code
         self.message = 'OK'
         return (response)
