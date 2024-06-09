@@ -222,9 +222,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         url = 'https://api.mouser.com/api/v001/cart/items/insert?apiKey=' + self.get_setting('MOUSERKEY') + '&countryCode=' + country_code
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = Wrappers.post_request(self, json.dumps(cart), url, header)
-        response = response.json()
 
         # Return with error if response was not OK
+        if response.status_code != 200:
+            return ({})
+        response = response.json()
         if response['Errors'] != []:
             self.status_code = 'Mouser answered: '
             self.message = response['Errors'][0]['Message']
@@ -281,6 +283,8 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         url = 'https://api.mouser.com/api/v1.0/search/partnumber?apiKey=' + self.get_setting('MOUSERSEARCHKEY')
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = Wrappers.post_request(self, json.dumps(part), url, header)
+        if response.status_code != 200:
+            return (part_data)
         response = response.json()
         if response['Errors'] != []:
             self.status_code = 'Error, '
