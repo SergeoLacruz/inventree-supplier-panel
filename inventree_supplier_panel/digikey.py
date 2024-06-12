@@ -36,10 +36,16 @@ class Digikey():
         part_data['MPN'] = response['ManufacturerPartNumber']
         part_data['URL'] = response['ProductUrl']
         part_data['lifecycle_status'] = response['ProductStatus']
-        part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
         part_data['description'] = response['DetailedDescription']
         part_data['package'] = ''
         part_data['price_breaks'] = []
+
+        # Digikey respondes 0 for the pack quantity on obsolete parts. We chenge this because
+        # Inventree does not support 0 here.
+        if response['MinimumOrderQuantity'] == 0:
+            part_data['pack_quantity'] = '1'
+        else:
+            part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
         for pb in response['StandardPricing']:
             part_data['price_breaks'].append({'Quantity': pb['BreakQuantity'], 'Price': pb['UnitPrice'], 'Currency': response['SearchLocaleUsed']['Currency']})
         for p in response['Parameters']:
@@ -129,6 +135,14 @@ class Digikey():
         merchandise_total = 0
         for p in parts_in_list['PartsList']:
             if p['DigiKeyPartNumber'] != '':
+
+                # For an obsolete part PackOptions is empty. We set a default for the rest
+                # not to crash
+                pack_option = {}
+                pack_option['CalculatedUnitPrice'] = 0
+                pack_option['ExtendedPrice'] = 0
+                pack_option['MinimumOrderQuantity'] = 1
+                pack_option['PackType'] = 'Obsolete'
                 for pack_option in p['Quantities'][0]['PackOptions']:
                     if pack_option['DigiKeyPartNumber'] == p['DigiKeyPartNumber']:
                         break
