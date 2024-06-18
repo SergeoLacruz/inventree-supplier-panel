@@ -5,21 +5,10 @@ async function JTransferCart(){
     response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
     location.reload();
 }
-async function JCreateToken(){
-    const client_id= '{{ plugin.digikey_client_id }}'
-    const callback_url = '{{ plugin.callback_url }}'
-    const URL='https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id=' + client_id + '&redirect_uri=' + callback_url + 'digikeytoken/'
-    window.open(URL, '_blank', 'location=yes,height=800,width=1400,scrollbars=yes,status=yes')
-    location.reload();
-}
 </script>
 
 <button type='button' class='btn btn-dark' onclick="JTransferCart()" title='{% trans "Transfer PO to Supplier" %}'>
 <span class='fas fa-redo-alt'></span> {% trans "Transfer PO" %}
-</button>
-
-<button type='button' class='btn btn-dark' onclick="JCreateToken()" title='{% trans "Create Token" %}'>
-<span class='fas fa-redo-alt'></span> {% trans "Create Token" %}
 </button>
 
 {% if plugin.status_code == 200 %}
@@ -45,7 +34,7 @@ Created Digikey list : {{ plugin.cart_content.cart_key }}
 	<td> {% trans "Status" %} </td>
 	<td align="right"> {% trans "Price" %} </td>
 	<td align="right"> {% trans "Total" %} </td>
-	<td ></td>
+	<td >{% trans "Note" %} </td>
     </tr>
 </thead>
 <tbody>
@@ -56,7 +45,7 @@ Created Digikey list : {{ plugin.cart_content.cart_key }}
 	<td> {{ sub.QuantityRequested }} </td>
 	<td> {{ sub.QuantityAvailable }} </td>
 	{% if sub.QuantityRequested > sub.QuantityAvailable %}
-            <td><span class='badge badge-left rounded-pill bg-danger'>{% trans "No Stock" %}</span></td>
+            <td><span class='badge badge-left rounded-pill bg-danger'>{% trans "Not OK" %}</span></td>
 	{% else %}
             <td><span class='badge badge-left rounded-pill bg-success'>{% trans "OK" %}</span></td>
 	{% endif %}
