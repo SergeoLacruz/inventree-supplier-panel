@@ -278,7 +278,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
-            if sp.SKU == data['sku']:
+            if sp.SKU.strip() == data['sku'].strip():
                 self.status_code = 'Supplierpart with this SKU already exists'
                 return HttpResponse('OK')
 
