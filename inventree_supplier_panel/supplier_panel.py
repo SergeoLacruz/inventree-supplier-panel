@@ -268,23 +268,23 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         part = Part.objects.filter(id=data['pk'])[0]
         supplier = Company.objects.filter(id=data['supplier'])[0]
         if (data['sku'] == ''):
-            self.status_code = 'Please provide part number'
-            return HttpResponse('OK')
+            # self.status_code = 'Please provide part number'
+            return HttpResponse('Please provide part number')
 
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
-            self.status_code = 'Part has no manufacturer part'
-            return HttpResponse('OK')
+            # self.status_code = 'Part has no manufacturer part'
+            return HttpResponse('Part has no manufacturer part')
 
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
             if sp.SKU.strip() == data['sku'].strip():
-                self.status_code = 'Supplierpart with this SKU already exists'
-                return HttpResponse('OK')
+                # self.status_code = 'Supplierpart with this SKU already exists'
+                return HttpResponse('Supplierpart with this SKU already exists')
 
         part_data = self.get_partdata(data['supplier'], data['sku'])
         if (self.status_code != 200):
-            return HttpResponse('OK')
+            return HttpResponse(self.message)
         if self.debug:
             print(part_data['price_breaks'])
         sp = SupplierPart.objects.create(part=part,
@@ -299,7 +299,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                          )
         for pb in part_data['price_breaks']:
             SupplierPriceBreak.objects.create(part=sp, quantity=pb['Quantity'], price=pb['Price'], price_currency=pb['Currency'])
-        return HttpResponse('OK')
+        return HttpResponse('Part created')
 
 # ---------------------------- Define the suppliers ----------------------------
     debug = False
