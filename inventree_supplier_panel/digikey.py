@@ -9,6 +9,63 @@ import json
 class Digikey():
 
     # --------------------------- get_digikey_partdata ----------------------------
+    # This part is for the new digikey search V4. In case of problems, the V3
+    # version is still available below. It can be selected by changing the
+    # function selector in the main file.
+
+    def get_digikey_partdata_v4(self, sku):
+        part_data = {}
+        token = Digikey.refresh_digikey_access_token(self)
+        if not token:
+            return (None)
+
+        # replace invalid characters in the partnumber
+        sku = quote(sku)
+        url = f'https://api.digikey.com/products/v4/search/{sku}/productdetails'
+        country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
+        header = {
+            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
+            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
+            'Content-Type': 'application/json',
+            'X-DIGIKEY-Locale-Currency': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
+            'X-DIGIKEY-Locale-Site': country_code,
+            'X-DIGIKEY-Locale-Language': 'EN'
+        }
+        response = Wrappers.get_request(self, url, headers=header)
+        if not response:
+            return (None)
+        print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
+        response = response.json()
+        for product in response['Product']['ProductVariations']:
+            if product['DigiKeyProductNumber'] == sku:
+                break
+        part_data['SKU'] = product['DigiKeyProductNumber']
+        part_data['MPN'] = response['Product']['ManufacturerProductNumber']
+        part_data['URL'] = response['Product']['ProductUrl']
+        part_data['lifecycle_status'] = response['Product']['ProductStatus']['Status']
+        part_data['description'] = response['Product']['Description']['DetailedDescription']
+        part_data['package'] = product['PackageType']['Name']
+        part_data['price_breaks'] = []
+
+        # Digikey respondes 0 for the pack quantity on obsolete parts. We change this because
+        # Inventree does not support 0 here.
+        if product['MinimumOrderQuantity'] == 0:
+            part_data['pack_quantity'] = '1'
+        else:
+            part_data['pack_quantity'] = str(product['MinimumOrderQuantity'])
+        for pb in product['StandardPricing']:
+            part_data['price_breaks'].append({'Quantity': pb['BreakQuantity'],
+                                              'Price': pb['UnitPrice'],
+                                              'Currency': response['SearchLocaleUsed']['Currency']
+                                              })
+        self.status_code = 200
+        self.message = 'OK'
+        return (part_data)
+
+    # --------------------------- get_digikey_partdata ----------------------------
+    # The function for the old digikey interface V3 is still available here but
+    # not used any longer.
+
     def get_digikey_partdata(self, sku):
         part_data = {}
         token = Digikey.refresh_digikey_access_token(self)

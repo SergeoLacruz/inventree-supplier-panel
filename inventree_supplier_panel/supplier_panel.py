@@ -315,7 +315,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                         'name': 'Digikey',
                                         'po_template': 'supplier_panel/digikey.html',
                                         'is_registered': False,
-                                        'get_partdata': Digikey.get_digikey_partdata,
+                                        'get_partdata': Digikey.get_digikey_partdata_v4,
                                         'update_cart': Digikey.update_digikey_cart,
                                         'create_cart': Digikey.create_digikey_cart,
                                         }
