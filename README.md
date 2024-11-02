@@ -29,8 +29,12 @@ your suppliers. If this is not set the panel will not be displayed and a error i
 Place here the primary key of the supplier Digikey in your system. You can select from a list of
 your suppliers. If this is not set the panel will not be displayed and a error is raised.
 
-### Mouser API key
+### Mouser cart API key
 Place here your Mouser key for manipulating shopping carts. You find it in your Mouser account.
+
+### Mouser search API key
+Place here your Mouser key for part search. You need to sing up for this with Mouser seperately.
+The key is not listet in you Mouser account.
 
 ### Digikey ID and Digikey Secret
 This is the client ID and the client secret that has been generated in the Digkey API admin WEB portal.
@@ -133,12 +137,12 @@ https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
 ```
 
 In this example 192.168.1.40:8123 is the local IP address and port where my
-InvenTree development server runs. Place here the appropriate address. The 
-settings page of the plugin gives some help: 
+InvenTree development server runs. Place here the appropriate address. The
+settings page of the plugin gives some help:
 
 ![setup](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/setup.png)
 
-The Callback URL is what you need to put into the Digikey page. 
+The Callback URL is what you need to put into the Digikey page.
 
 In Production products section make sure that Product information and MyLists is activated.
 
@@ -168,7 +172,7 @@ where you enter your credentials. When the OAuth callback is properly set the UR
 https://api.digikey.com/v1/oauth2/token from where the plugin get the tokens. The tokens
 are stored in the plugin setting area. Do not change them manually.
 Make sure that the Base-URL is properly set in the InvenTree server settings. The
-plugin constructs the authentication callback using this. 
+plugin constructs the authentication callback using this.
 
 Each time you transfer a PO the refresh token is called independently from the
 tokens live time. This also refreshes the refresh token. So you are save when
@@ -192,7 +196,7 @@ as mentioned in the Mouser section and transfers both to Digikey. Digikey sends 
 list in the correct currency. Unfortunately the currency code is not sent back. The only
 thing Digikey sends is a currency symbol but no info if $ is USD, AUD or whatever kind of Dollar.
 Mouser does not allow to set the currency. Mouser selects the currency automatically
-based on the country where the request comes from. 
+based on the country where the request comes from.
 
 ## Automatically create supplierparts
 The plugin can create supplierparts based on the supplier part number. For users with
