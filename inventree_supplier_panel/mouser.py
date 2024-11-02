@@ -101,7 +101,7 @@ class Mouser():
             "CartKey": cart_key,
             "CartItems": cart_items
         }
-        url = 'https://api.mouser.com/api/v001/cart/items/insert?apiKey=' + self.get_setting('MOUSERKEY') + '&countryCode=' + country_code
+        url = 'https://api.mouser.com/api/v001/cart/items/insert?apiKey=' + self.get_setting('MOUSERCARTKEY') + '&countryCode=' + country_code
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = Wrappers.post_request(self, json.dumps(cart), url, header)
 

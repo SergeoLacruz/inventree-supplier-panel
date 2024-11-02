@@ -51,9 +51,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'description': 'Primary key of the Digikey supplier',
             'model': 'company.company',
         },
-        'MOUSERKEY': {
-            'name': 'Mouser API key',
-            'description': 'Place here your key for the Mouser API',
+        'MOUSERCARTKEY': {
+            'name': 'Mouser cart API key',
+            'description': 'Place here your key for the Mouser shopping cart API',
         },
         'MOUSERSEARCHKEY': {
             'name': 'Mouser search API key',
