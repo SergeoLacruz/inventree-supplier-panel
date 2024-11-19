@@ -13,11 +13,11 @@ class Digikey():
     # version is still available below. It can be selected by changing the
     # function selector in the main file.
 
-    def get_digikey_partdata_v4(self, sku):
+    def get_digikey_partdata_v4(self, sku, options):
         part_data = {}
         token = Digikey.refresh_digikey_access_token(self)
         if not token:
-            return (None)
+            return (-1, None)
 
         # replace invalid characters in the partnumber
         sku = quote(sku)
@@ -33,7 +33,7 @@ class Digikey():
         }
         response = Wrappers.get_request(self, url, headers=header)
         if not response:
-            return (None)
+            return (-1, None)
         print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
         response = response.json()
         for product in response['Product']['ProductVariations']:
@@ -60,17 +60,17 @@ class Digikey():
                                               })
         self.status_code = 200
         self.message = 'OK'
-        return (part_data)
+        return (1, part_data)
 
     # --------------------------- get_digikey_partdata ----------------------------
     # The function for the old digikey interface V3 is still available here but
     # not used any longer.
 
-    def get_digikey_partdata(self, sku):
+    def get_digikey_partdata(self, sku, options):
         part_data = {}
         token = Digikey.refresh_digikey_access_token(self)
         if not token:
-            return (None)
+            return (-1, None)
 
         # replace invalid characters in the partnumber
         sku = quote(sku)
@@ -86,7 +86,7 @@ class Digikey():
         }
         response = Wrappers.get_request(self, url, headers=header)
         if not response:
-            return (None)
+            return (-1, None)
         print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
         response = response.json()
         part_data['SKU'] = response['DigiKeyPartNumber']
@@ -110,7 +110,7 @@ class Digikey():
                 part_data['package'] = p['Value']
         self.status_code = 200
         self.message = 'OK'
-        return (part_data)
+        return (1, part_data)
 
     # ------------------- create_digikey_cart
     # Digikey does not have a cart API. So we create a list using the MyLists API

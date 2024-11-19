@@ -9,7 +9,7 @@ import json
 class Mouser():
 
     # --------------------------- get_mouser_partdata -----------------------------
-    def get_mouser_partdata(self, sku):
+    def get_mouser_partdata(self, sku, options):
 
         part_data = {}
         part = {"SearchByPartRequest": {"mouserPartNumber": sku,
@@ -20,21 +20,21 @@ class Mouser():
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = Wrappers.post_request(self, json.dumps(part), url, header)
         if response.status_code != 200:
-            return (part_data)
+            return -1, part_data
         response = response.json()
         if response['Errors'] != []:
             self.status_code = 'Error, '
             self.message = response['Errors']
-            return (part_data)
+            return -1, part_data
         number_of_results = int(response['SearchResults']['NumberOfResult'])
         if number_of_results == 0:
             self.status_code = 'Error, '
             self.message = 'Part not found: ' + sku
-            return (part_data)
+            return 0, part_data
         if number_of_results > 1:
             self.status_code = 'Error, '
             self.message = 'Multiple parts found. Check supplier part number: ' + sku
-            return (part_data)
+            return number_of_results, part_data
         part_data['SKU'] = response['SearchResults']['Parts'][0]['MouserPartNumber']
         part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
         part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
@@ -48,7 +48,7 @@ class Mouser():
             part_data['price_breaks'].append({'Quantity': pb['Quantity'], 'Price': new_price, 'Currency': pb['Currency']})
         self.status_code = 200
         self.message = 'OK'
-        return (part_data)
+        return 1, part_data
 
     # ------------------------------- get_mouser_package --------------------------
     # Extracts the available packages from the Mouser part data json

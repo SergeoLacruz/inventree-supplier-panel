@@ -205,10 +205,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # This is just the wrapper that selects the proper supplier dependant function
     def get_partdata(self, supplier, sku):
 
+        results = 0
         for s in self.registered_suppliers:
             if supplier == self.registered_suppliers[s]['pk']:
-                part_data = self.registered_suppliers[s]['get_partdata'](self, sku)
-        return (part_data)
+                results, part_data = self.registered_suppliers[s]['get_partdata'](self, sku, "None")
+        return results, part_data
 
 # --------------------------- receive_authcode --------------------------------
 # This creates the Digikey token from the authcode
@@ -282,7 +283,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 self.status_code = 'Supplierpart with this SKU already exists'
                 return HttpResponse('OK')
 
-        part_data = self.get_partdata(data['supplier'], data['sku'])
+        results, part_data = self.get_partdata(data['supplier'], data['sku'])
         if (self.status_code != 200):
             return HttpResponse('OK')
         if self.debug:
