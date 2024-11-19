@@ -13,7 +13,7 @@ class Mouser():
 
         part_data = {}
         part = {"SearchByPartRequest": {"mouserPartNumber": sku,
-                                        "partSearchOptions": "exact"
+                                        "partSearchOptions": options,
                                         }
                 }
         url = 'https://api.mouser.com/api/v1.0/search/partnumber?apiKey=' + self.get_setting('MOUSERSEARCHKEY')
