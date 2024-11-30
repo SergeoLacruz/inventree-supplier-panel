@@ -31,10 +31,6 @@ class Mouser():
             self.status_code = 'Error, '
             self.message = 'Part not found: ' + sku
             return 0, part_data
-        if number_of_results > 1:
-            self.status_code = 'Error, '
-            self.message = 'Multiple parts found. Check supplier part number: ' + sku
-            return number_of_results, part_data
         part_data['SKU'] = response['SearchResults']['Parts'][0]['MouserPartNumber']
         part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
         part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
@@ -43,6 +39,10 @@ class Mouser():
         part_data['description'] = response['SearchResults']['Parts'][0]['Description']
         part_data['package'] = Mouser.get_mouser_package(self, response['SearchResults']['Parts'][0])
         part_data['price_breaks'] = []
+        if number_of_results > 1:
+            self.status_code = 'Error, '
+            self.message = 'Multiple parts found. Check supplier part number: ' + sku
+            return number_of_results, part_data
         for pb in response['SearchResults']['Parts'][0]['PriceBreaks']:
             new_price = Mouser.reformat_mouser_price(self, pb['Price'])
             part_data['price_breaks'].append({'Quantity': pb['Quantity'], 'Price': new_price, 'Currency': pb['Currency']})
@@ -142,5 +142,5 @@ class Mouser():
                          }
         self.status_code = 200
         self.message = 'OK'
-        MetaAccess.set_value(self, order, self.NAME, 'MouserCartKey', response['CartKey'])
+        MetaAccess.set_value(self, order, 'MouserCartKey', response['CartKey'])
         return (shopping_cart)

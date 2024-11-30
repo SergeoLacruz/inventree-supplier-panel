@@ -120,7 +120,7 @@ class Digikey():
 
     def create_digikey_cart(self, order):
         cart_data = {}
-        list_name = MetaAccess.get_value(self, order, self.NAME, 'DigiKeyListName')
+        list_name = MetaAccess.get_value(self, order, 'DigiKeyListName')
         if list_name is None:
             list_name = order.reference + '-00'
         version = int(list_name[len(list_name) - 2:]) + 1
@@ -137,7 +137,7 @@ class Digikey():
                 cart_data['ID'] = ''
                 self.message = 'No valid list name found within 20 attempts'
                 return cart_data
-        MetaAccess.set_value(self, order, self.NAME, 'DigiKeyListName', list_name)
+        MetaAccess.set_value(self, order, 'DigiKeyListName', list_name)
         url = 'https://api.digikey.com/mylists/v1/lists'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
@@ -239,7 +239,7 @@ class Digikey():
         # Digikey does not return a currency code. So we take the one from the settings.
         shopping_cart = {'MerchandiseTotal': merchandise_total,
                          'CartItems': cart_items,
-                         'cart_key': MetaAccess.get_value(self, order, self.NAME, 'DigiKeyListName'),
+                         'cart_key': MetaAccess.get_value(self, order, 'DigiKeyListName'),
                          'currency_code': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
                          }
         self.status_code = 200

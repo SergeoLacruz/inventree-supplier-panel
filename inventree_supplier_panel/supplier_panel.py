@@ -9,12 +9,12 @@ from plugin import InvenTreePlugin
 from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
 from company.models import Company, ManufacturerPart, SupplierPart
 from company.models import SupplierPriceBreak
-from inventree_supplier_panel.version import PLUGIN_VERSION
-from inventree_supplier_panel.mouser import Mouser
-from inventree_supplier_panel.digikey import Digikey
-from inventree_supplier_panel.request_wrappers import Wrappers
 from users.models import check_user_role
 from common.models import InvenTreeSetting
+from .version import PLUGIN_VERSION
+from .mouser import Mouser
+from .digikey import Digikey
+from .request_wrappers import Wrappers
 
 import json
 
