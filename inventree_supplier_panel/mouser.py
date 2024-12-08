@@ -66,10 +66,16 @@ class Mouser():
     # --------------------------- reformat_mouser_price --------------------------
     # We need a Mouser specific modification to the price answer because they put
     # funny things inside like an EURO sign and they use , instead of .
+
     def reformat_mouser_price(self, price):
+        price = price.replace('.', '')
         price = price.replace(',', '.')
         non_decimal = re.compile(r'[^\d.]+')
-        price = float(non_decimal.sub('', price))
+        price = non_decimal.sub('', price)
+        if price == '':
+            price = 0
+        else:
+            price = float(price)
         return price
 
     # ------------------------ create_cart -------------------------------------------
