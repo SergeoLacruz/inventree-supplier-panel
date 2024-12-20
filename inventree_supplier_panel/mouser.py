@@ -35,7 +35,7 @@ class Mouser():
         part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
         part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
         part_data['lifecycle_status'] = response['SearchResults']['Parts'][0]['LifecycleStatus']
-        part_data['pack_quantity'] = response['SearchResults']['Parts'][0]['Mult']
+        part_data['pack_quantity'] = Mouser.get_mouser_pack_size(self, response['SearchResults']['Parts'][0]) or response['SearchResults']['Parts'][0]['Mult']
         part_data['description'] = response['SearchResults']['Parts'][0]['Description']
         part_data['package'] = Mouser.get_mouser_package(self, response['SearchResults']['Parts'][0])
         part_data['price_breaks'] = []
@@ -59,9 +59,22 @@ class Mouser():
         except Exception:
             return None
         for att in attributes:
-            if att['AttributeName'] == 'Verpackung':
+            if att['AttributeName'] == 'Packaging':
                 package = package + att['AttributeValue'] + ', '
         return (package)
+
+    # ------------------------------- get_mouser_pack_size --------------------------
+    # Extracts the pack size from the Mouser part data json
+    def get_mouser_pack_size(self, part_data):
+        package_size = 0
+        try:
+            attributes = part_data['ProductAttributes']
+        except Exception:
+            return None
+        for att in attributes:
+            if att['AttributeName'] == 'Standard Pack Qty':
+                package_size = att['AttributeValue']
+        return (package_size)
 
     # --------------------------- reformat_mouser_price --------------------------
     # We need a Mouser specific modification to the price answer because they put

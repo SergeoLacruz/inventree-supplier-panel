@@ -283,6 +283,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                 self.status_code = 'Supplierpart with this SKU already exists'
                 return HttpResponse('OK')
 
+        part_data = None
         results, part_data = self.get_partdata(data['supplier'], data['sku'], 'exact')
         if (self.status_code != 200):
             return HttpResponse('OK')
