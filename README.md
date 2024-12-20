@@ -9,7 +9,7 @@ depending on the supplier.
 The data will be created in your supplier account. Each time you transfer your PO
 a new data set cart will be created. So make sure that you delete them from time to time in
 the supplier WEB interface.
-The plugin also helps to create supplierparts based on the supplier part number..
+The plugin also helps to create supplierparts based on the supplier part number.
 Actually the plugin supports two suppliers: Mouser and Digikey.
 
 ## Installation
@@ -267,3 +267,9 @@ This is usually not a problem in production environments. However the developmen
 usually runs http. But InvenTree has the required stuff for https on board. I just changed
 the runserver to runsslserver in tasks.py.
 
+### Country specific
+It might happen that you run into issues with country and language specific settings. The plugin
+was developed and tested in Germany. Mouser e.g. sends back strings in german language and prices
+in Euro. There seems to be no way to change that. Support for other contries is limited as
+there are no testing possibilities at the moment. Please open an issue in case of problems. 
+Testing outside of Germany will be helpful.
