@@ -53,13 +53,15 @@ class Mouser():
     # ------------------------------- get_mouser_package --------------------------
     # Extracts the available packages from the Mouser part data json
     def get_mouser_package(self, part_data):
+
+        att_names = {'packaging': {'German': 'Verpackung', 'English': 'Packaging'}}
         package = ''
         try:
             attributes = part_data['ProductAttributes']
         except Exception:
             return None
         for att in attributes:
-            if att['AttributeName'] == 'Verpackung':
+            if att['AttributeName'] == att_names['packaging'][self.get_setting('MOUSERLANGUAGE')]:
                 package = package + att['AttributeValue'] + ', '
         return (package)
 

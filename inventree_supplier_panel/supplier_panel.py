@@ -59,6 +59,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'name': 'Mouser search API key',
             'description': 'Place here your key for the Mouser search API',
         },
+        'MOUSERLANGUAGE': {
+            'name': 'Mouser language',
+            'description': 'The language that Mouser uses to answer your requests',
+            'choices': [('English', 'Mouser answers in English'),
+                        ('German', 'Mouser answers in German')],
+            'default': 'German',
+        },
         'DIGIKEY_CLIENT_ID': {
             'name': 'Digikey ID',
             'description': 'Client ID for Digikey',
