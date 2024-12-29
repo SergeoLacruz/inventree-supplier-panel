@@ -35,7 +35,7 @@ class Mouser():
         part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
         part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
         part_data['lifecycle_status'] = response['SearchResults']['Parts'][0]['LifecycleStatus']
-        part_data['pack_quantity'] = response['SearchResults']['Parts'][0]['Mult']
+        part_data['pack_quantity'] = response['SearchResults']['Parts'][0]['Mult'] or '250'
         part_data['description'] = response['SearchResults']['Parts'][0]['Description']
         part_data['package'] = Mouser.get_mouser_package(self, response['SearchResults']['Parts'][0])
         part_data['price_breaks'] = []

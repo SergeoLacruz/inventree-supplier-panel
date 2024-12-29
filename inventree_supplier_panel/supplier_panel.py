@@ -92,16 +92,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # disabled. The button for Digikey token creation is also here.
 
     def get_settings_content(self, request):
-        try:
-            self.get_setting('DIGIKEY_PK')
-            digikey_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
-        except Exception:
+        if self.get_setting('DIGIKEY_PK') == '':
             digikey_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
-        try:
-            self.get_setting('MOUSER_PK')
-            mouser_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
-        except Exception:
+        else:
+            digikey_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
+        if self.get_setting('MOUSER_PK') == '':
             mouser_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
+        else:
+            mouser_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
         client_id = self.get_setting('DIGIKEY_CLIENT_ID')
         base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
         if base_url == '':
