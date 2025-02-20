@@ -211,6 +211,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     def get_partdata(self, supplier, sku, options):
 
         results = 0
+        part_data = {}
         for s in self.registered_suppliers:
             if supplier == self.registered_suppliers[s]['pk']:
                 results, part_data = self.registered_suppliers[s]['get_partdata'](self, sku, options)
