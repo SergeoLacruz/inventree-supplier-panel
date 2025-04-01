@@ -1,7 +1,11 @@
-{% load static %}
-{% load inventree_extras %}
-{% load plugin_extras %}
 {% load i18n %}
+
+<script>
+async function JTransferCart(){
+    response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
+    location.reload();
+}
+</script>
 
 <button type='button' class='btn btn-dark' onclick="JTransferCart()" title='{% trans "Transfer PO to Supplier" %}'>
 <span class='fas fa-redo-alt'></span> {% trans "Transfer PO" %}
@@ -64,13 +68,3 @@ Created Mouser shopping cart Key: {{ plugin.cart_content.cart_key }}
 </tfoot>
 </table>
 
-
-{% block js_ready %}
-<script>
-async function JTransferCart(){
-    response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
-    console.log(response)
-    location.reload();
-}
-</script>
-{% endblock js_ready %}

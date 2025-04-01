@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.urls import re_path
 
 from order.views import PurchaseOrderDetail
@@ -155,12 +156,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
             self.registered_suppliers['Mouser']['is_registered'] = True
         except Exception:
-            pass
+            self.registered_suppliers['Mouser']['is_registered'] = False
         try:
             self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
             self.registered_suppliers['Digikey']['is_registered'] = True
         except Exception:
-            pass
+            self.registered_suppliers['Digikey']['is_registered'] = False
 
         # For purchase orders: PO transfer
         if isinstance(view, PurchaseOrderDetail):
@@ -210,12 +211,20 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # This is just the wrapper that selects the proper supplier dependant function
     def get_partdata(self, supplier, sku, options):
 
-        results = 0
+        try:
+            self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
+        except Exception:
+            pass
+        try:
+            self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
+        except Exception:
+            pass
+
         part_data = {}
         for s in self.registered_suppliers:
             if supplier == self.registered_suppliers[s]['pk']:
-                results, part_data = self.registered_suppliers[s]['get_partdata'](self, sku, options)
-        return results, part_data
+                part_data = self.registered_suppliers[s]['get_partdata'](self, sku, options)
+        return part_data
 
 # --------------------------- receive_authcode --------------------------------
 # This creates the Digikey token from the authcode
@@ -275,41 +284,36 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         part = Part.objects.filter(id=data['pk'])[0]
         supplier = Company.objects.filter(id=data['supplier'])[0]
         if (data['sku'] == ''):
-            self.status_code = 'Please provide part number'
-            return HttpResponse('OK')
-
+            return JsonResponse({"message":"Please provide part number"})
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
-            self.status_code = 'Part has no manufacturer part'
-            return HttpResponse('OK')
-
+            return JsonResponse({"message":"Part has no manufacturer part"})
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
             if sp.SKU.strip() == data['sku'].strip():
-                self.status_code = 'Supplierpart with this SKU already exists'
-                return HttpResponse('OK')
+                return JsonResponse({"message":"Supplierpart with this SKU already exists"})
 
-        results, part_data = self.get_partdata(data['supplier'], data['sku'], 'exact')
-        if (self.status_code != 200):
-            return HttpResponse('OK')
-        if self.debug:
-            print(part_data['price_breaks'])
+        # Here start the new interface
+        data = self.get_partdata(data['supplier'], data['sku'], 'exact')
+        if data['error_status'] != 'OK':
+            return JsonResponse({"message":data['error_status']})
+        if data['number_of_results'] == 0:
+            return JsonResponse({"message":"Part not found"})
         sp = SupplierPart.objects.create(part=part,
-                                         supplier=supplier,
-                                         manufacturer_part=manufacturer_part[0],
-                                         SKU=part_data['SKU'],
-                                         link=part_data['URL'],
-                                         note=part_data['lifecycle_status'],
-                                         packaging=part_data['package'],
-                                         pack_quantity=part_data['pack_quantity'],
-                                         description=part_data['description'],
-                                         )
-        for pb in part_data['price_breaks']:
+                                     supplier=supplier,
+                                     manufacturer_part=manufacturer_part[0],
+                                     SKU=data['SKU'],
+                                     link=data['URL'],
+                                     note=data['lifecycle_status'],
+                                     packaging=data['package'],
+                                     pack_quantity=data['pack_quantity'],
+                                     description=data['description'],
+                                     )
+        for pb in data['price_breaks']:
             SupplierPriceBreak.objects.create(part=sp, quantity=pb['Quantity'], price=pb['Price'], price_currency=pb['Currency'])
-        return HttpResponse('OK')
+        return JsonResponse({"message":"OK"})
 
 # ---------------------------- Define the suppliers ----------------------------
-    debug = False
     registered_suppliers = {'Mouser': {'pk': 0,
                                        'name': 'Mouser',
                                        'po_template': 'supplier_panel/mouser.html',

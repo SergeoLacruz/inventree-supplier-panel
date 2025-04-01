@@ -16,11 +16,12 @@ class Digikey():
     def get_digikey_partdata_v4(self, sku, options):
         part_data = {}
         token = Digikey.refresh_digikey_access_token(self)
-        if not token:
-            return (-1, None)
+        if token['status_code'] != 200:
+            part_data['error_status'] = token['message']
+            return part_data
 
         # replace invalid characters in the partnumber
-        sku = quote(sku)
+        sku = quote(sku, safe='')
         url = f'https://api.digikey.com/products/v4/search/{sku}/productdetails'
         country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
         header = {
@@ -32,20 +33,35 @@ class Digikey():
             'X-DIGIKEY-Locale-Language': 'EN'
         }
         response = Wrappers.get_request(self, url, headers=header)
-        if not response:
-            return (-1, None)
+        try:
+            response_json = response.json()
+        except Exception:
+            part_data['error_status'] = response
+            return part_data
+        print(response_json)
+
+        # If we are here, digikey responded. Lets look for errors.
+        try: 
+            if response_json['status'] != 200:
+                part_data['error_status'] = response_json['title'] + response_json['detail']
+                return part_data
+        except Exception:
+            pass
+
         print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
-        response = response.json()
-        for product in response['Product']['ProductVariations']:
+        # Select the right variation that fits the searched SKU
+        for product in response_json['Product']['ProductVariations']:
             if product['DigiKeyProductNumber'] == sku:
                 break
         part_data['SKU'] = product['DigiKeyProductNumber']
-        part_data['MPN'] = response['Product']['ManufacturerProductNumber']
-        part_data['URL'] = response['Product']['ProductUrl']
-        part_data['lifecycle_status'] = response['Product']['ProductStatus']['Status']
-        part_data['description'] = response['Product']['Description']['DetailedDescription']
+        part_data['MPN'] = response_json['Product']['ManufacturerProductNumber']
+        part_data['URL'] = response_json['Product']['ProductUrl']
+        part_data['lifecycle_status'] = response_json['Product']['ProductStatus']['Status']
+        part_data['description'] = response_json['Product']['Description']['DetailedDescription']
         part_data['package'] = product['PackageType']['Name']
         part_data['price_breaks'] = []
+        part_data['error_status'] = 'OK'
+        part_data['number_of_results'] = 1
 
         # Digikey respondes 0 for the pack quantity on obsolete parts. We change this because
         # Inventree does not support 0 here.
@@ -56,61 +72,9 @@ class Digikey():
         for pb in product['StandardPricing']:
             part_data['price_breaks'].append({'Quantity': pb['BreakQuantity'],
                                               'Price': pb['UnitPrice'],
-                                              'Currency': response['SearchLocaleUsed']['Currency']
+                                              'Currency': response_json['SearchLocaleUsed']['Currency']
                                               })
-        self.status_code = 200
-        self.message = 'OK'
-        return (1, part_data)
-
-    # --------------------------- get_digikey_partdata ----------------------------
-    # The function for the old digikey interface V3 is still available here but
-    # not used any longer.
-
-    def get_digikey_partdata(self, sku, options):
-        part_data = {}
-        token = Digikey.refresh_digikey_access_token(self)
-        if not token:
-            return (-1, None)
-
-        # replace invalid characters in the partnumber
-        sku = quote(sku)
-        url = f'https://api.digikey.com/Search/v3/Products/{sku}'
-        country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
-        header = {
-            'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
-            'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
-            'Content-Type': 'application/json',
-            'X-DIGIKEY-Locale-Currency': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
-            'X-DIGIKEY-Locale-Site': country_code,
-            'X-DIGIKEY-Locale-Language': 'EN'
-        }
-        response = Wrappers.get_request(self, url, headers=header)
-        if not response:
-            return (-1, None)
-        print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
-        response = response.json()
-        part_data['SKU'] = response['DigiKeyPartNumber']
-        part_data['MPN'] = response['ManufacturerPartNumber']
-        part_data['URL'] = response['ProductUrl']
-        part_data['lifecycle_status'] = response['ProductStatus']
-        part_data['description'] = response['DetailedDescription']
-        part_data['package'] = ''
-        part_data['price_breaks'] = []
-
-        # Digikey respondes 0 for the pack quantity on obsolete parts. We chenge this because
-        # Inventree does not support 0 here.
-        if response['MinimumOrderQuantity'] == 0:
-            part_data['pack_quantity'] = '1'
-        else:
-            part_data['pack_quantity'] = str(response['MinimumOrderQuantity'])
-        for pb in response['StandardPricing']:
-            part_data['price_breaks'].append({'Quantity': pb['BreakQuantity'], 'Price': pb['UnitPrice'], 'Currency': response['SearchLocaleUsed']['Currency']})
-        for p in response['Parameters']:
-            if p['ParameterId'] == 7:
-                part_data['package'] = p['Value']
-        self.status_code = 200
-        self.message = 'OK'
-        return (1, part_data)
+        return (part_data)
 
     # ------------------- create_digikey_cart
     # Digikey does not have a cart API. So we create a list using the MyLists API
@@ -277,8 +241,14 @@ class Digikey():
         header = {}
         token = {}
         response = Wrappers.post_request(self, url_data, url, headers=header)
-        if not response:
-            return (None)
+        print('## token:', response)
+        print('## token:', response.content)
+        response_json = response.json()
+        print('## token:', response_json['StatusCode'])
+        if response_json['StatusCode'] != 200:
+            token['status_code'] = response_json['StatusCode']
+            token['message'] = response_json['ErrorDetails']
+            return (token)
         print('\033[32mToken refresh SUCCESS\033[0m')
         response_data = response.json()
         self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])

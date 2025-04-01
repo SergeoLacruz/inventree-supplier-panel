@@ -1,3 +1,51 @@
+"""
+Unfortunately Mouser does not list possible error codes. Here are some examples:
+
+If the access key is wrong:
+{'Errors': [
+            {'Id': 0,
+             'Code': 'Invalid',
+             'Message': 'Invalid unique identifier.',
+             'ResourceKey': 'InvalidIdentifier',
+             'ResourceFormatString': None,
+             'ResourceFormatString2': None,
+             'PropertyName': 'API Key'}
+           ], 'SearchResults': None}
+
+If the access key is empty:
+{'Errors': [
+            {'Id': 0,
+             'Code': 'Required',
+             'Message': 'Required',
+             'ResourceKey': 'Required',
+             'ResourceFormatString': None,
+             'ResourceFormatString2': None,
+             'PropertyName': 'API Key'}
+           ], 'SearchResults': None}
+
+If there are invalid characters in the search string like non ACSII:
+{'Errors': [
+            {'Id': 0,
+             'Code': 'InvalidCharacters',
+             'Message': None,
+             'ResourceKey': None,
+             'ResourceFormatString': None,
+             'ResourceFormatString2': None,
+             'PropertyName': None}
+           ], 'SearchResults': None}
+
+If you created more than 1000 requests within 24 hours:
+{'Errors': [
+            {'Id': 0,
+             'Code': 'TooManyRequests',
+             'Message': None,
+             'ResourceKey': None,
+             'ResourceFormatString': None,
+             'ResourceFormatString2': None,
+             'PropertyName': None}
+           ], 'SearchResults': None}
+
+"""
 from common.models import InvenTreeSetting
 
 from inventree_supplier_panel.request_wrappers import Wrappers
@@ -5,9 +53,7 @@ from inventree_supplier_panel.meta_access import MetaAccess
 import re
 import json
 
-
 class Mouser():
-
     # --------------------------- get_mouser_partdata -----------------------------
     def get_mouser_partdata(self, sku, options):
 
@@ -19,36 +65,67 @@ class Mouser():
         url = 'https://api.mouser.com/api/v1.0/search/partnumber?apiKey=' + self.get_setting('MOUSERSEARCHKEY')
         header = {'Content-type': 'application/json', 'Accept': 'application/json'}
         response = Wrappers.post_request(self, json.dumps(part), url, header)
-        if response.status_code != 200:
-            return -1, part_data
-        response = response.json()
+        try:
+            response = response.json()
+        except Exception:
+            part_data['error_status'] = response
+            return part_data
+
+#        print(response)
+        # If we are here, Mouser responded. Lets look for errors. Some
+        # errors do not come in the Errors array, but in a Message.
+        # Lets check those first
+        try:
+            part_data['error_status'] = response['Message']
+            return part_data
+        except Exception:
+            pass
+
+        # Then we evaluate the Errors array. there are some known errors
+        # and the rest.
         if response['Errors'] != []:
-            self.status_code = 'Error, '
-            self.message = response['Errors']
-            return -1, part_data
+            if response['Errors'][0]['Code'] == 'InvalidCharacters':
+                part_data['error_status'] = 'InvalidCharacters'
+            elif response['Errors'][0]['Code'] == 'Invalid':
+                part_data['error_status'] = 'InvalidAuthorization'
+            elif response['Errors'][0]['Code'] == 'TooManyRequests':
+                part_data['error_status'] = 'TooManyRequests'
+            else:
+                part_data['error_status'] = response['Errors'][0]['Code']
+            return part_data
+
+        # If we came here, no errors have been reported and there sould be results.
         number_of_results = int(response['SearchResults']['NumberOfResult'])
         if number_of_results == 0:
-            self.status_code = 'Error, '
-            self.message = 'Part not found: ' + sku
-            return 0, part_data
-        part_data['SKU'] = response['SearchResults']['Parts'][0]['MouserPartNumber']
-        part_data['MPN'] = response['SearchResults']['Parts'][0]['ManufacturerPartNumber']
-        part_data['URL'] = response['SearchResults']['Parts'][0]['ProductDetailUrl']
-        part_data['lifecycle_status'] = response['SearchResults']['Parts'][0]['LifecycleStatus']
-        part_data['pack_quantity'] = response['SearchResults']['Parts'][0]['Mult'] or '250'
-        part_data['description'] = response['SearchResults']['Parts'][0]['Description']
-        part_data['package'] = Mouser.get_mouser_package(self, response['SearchResults']['Parts'][0])
-        part_data['price_breaks'] = []
-        if number_of_results > 1:
-            self.status_code = 'Error, '
-            self.message = 'Multiple parts found. Check supplier part number: ' + sku
-            return number_of_results, part_data
-        for pb in response['SearchResults']['Parts'][0]['PriceBreaks']:
-            new_price = Mouser.reformat_mouser_price(self, pb['Price'])
-            part_data['price_breaks'].append({'Quantity': pb['Quantity'], 'Price': new_price, 'Currency': pb['Currency']})
-        self.status_code = 200
-        self.message = 'OK'
-        return 1, part_data
+            part_data['error_status'] = 'OK'
+            part_data['number_of_results'] = number_of_results
+            return part_data
+
+        # Here least one result has been reported
+        part_data['error_status'] = 'OK'
+        number_of_results = 0
+        
+        # Sometimes Mouser reports parts with different SKU even when exace is set
+        # Lest filter those
+        for pd in response['SearchResults']['Parts']:
+            if pd['MouserPartNumber'] == sku:
+                part_data['price_breaks'] = []
+                part_data['SKU'] = pd['MouserPartNumber']
+                part_data['MPN'] = pd['ManufacturerPartNumber']
+                part_data['URL'] = pd['ProductDetailUrl']
+                part_data['lifecycle_status'] = pd['LifecycleStatus']
+                part_data['pack_quantity'] = pd['Mult']
+                part_data['description'] = pd['Description']
+                part_data['package'] = Mouser.get_mouser_package(self, pd)
+                for pb in pd['PriceBreaks']:
+                    new_price = Mouser.reformat_mouser_price(self, pb['Price'])
+                    part_data['price_breaks'].append({'Quantity': pb['Quantity'], 'Price': new_price, 'Currency': pb['Currency']})
+                number_of_results = number_of_results + 1
+            else:
+                print('SKU does not match')
+
+        part_data['number_of_results'] = number_of_results
+        return part_data
 
     # ------------------------------- get_mouser_package --------------------------
     # Extracts the available packages from the Mouser part data json
@@ -79,6 +156,11 @@ class Mouser():
         else:
             price = float(price)
         return price
+
+
+
+
+
 
     # ------------------------ create_cart -------------------------------------------
     # For Mouser this is just a dummy. We do not create a cart ID so far. It is
