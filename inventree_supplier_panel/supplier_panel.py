@@ -284,34 +284,34 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         part = Part.objects.filter(id=data['pk'])[0]
         supplier = Company.objects.filter(id=data['supplier'])[0]
         if (data['sku'] == ''):
-            return JsonResponse({"message":"Please provide part number"})
+            return JsonResponse({"message": "Please provide part number"})
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
         if len(manufacturer_part) == 0:
-            return JsonResponse({"message":"Part has no manufacturer part"})
+            return JsonResponse({"message": "Part has no manufacturer part"})
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
             if sp.SKU.strip() == data['sku'].strip():
-                return JsonResponse({"message":"Supplierpart with this SKU already exists"})
+                return JsonResponse({"message": "Supplierpart with this SKU already exists"})
 
         # Here start the new interface
         data = self.get_partdata(data['supplier'], data['sku'], 'exact')
         if data['error_status'] != 'OK':
-            return JsonResponse({"message":data['error_status']})
+            return JsonResponse({"message": data['error_status']})
         if data['number_of_results'] == 0:
-            return JsonResponse({"message":"Part not found"})
+            return JsonResponse({"message": "Part not found"})
         sp = SupplierPart.objects.create(part=part,
-                                     supplier=supplier,
-                                     manufacturer_part=manufacturer_part[0],
-                                     SKU=data['SKU'],
-                                     link=data['URL'],
-                                     note=data['lifecycle_status'],
-                                     packaging=data['package'],
-                                     pack_quantity=data['pack_quantity'],
-                                     description=data['description'],
-                                     )
+                                         supplier=supplier,
+                                         manufacturer_part=manufacturer_part[0],
+                                         SKU=data['SKU'],
+                                         link=data['URL'],
+                                         note=data['lifecycle_status'],
+                                         packaging=data['package'],
+                                         pack_quantity=data['pack_quantity'],
+                                         description=data['description'],
+                                         )
         for pb in data['price_breaks']:
             SupplierPriceBreak.objects.create(part=sp, quantity=pb['Quantity'], price=pb['Price'], price_currency=pb['Currency'])
-        return JsonResponse({"message":"OK"})
+        return JsonResponse({"message": "OK"})
 
 # ---------------------------- Define the suppliers ----------------------------
     registered_suppliers = {'Mouser': {'pk': 0,

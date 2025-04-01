@@ -53,6 +53,7 @@ from inventree_supplier_panel.meta_access import MetaAccess
 import re
 import json
 
+
 class Mouser():
     # --------------------------- get_mouser_partdata -----------------------------
     def get_mouser_partdata(self, sku, options):
@@ -104,7 +105,7 @@ class Mouser():
         # Here least one result has been reported
         part_data['error_status'] = 'OK'
         number_of_results = 0
-        
+
         # Sometimes Mouser reports parts with different SKU even when exace is set
         # Lest filter those
         for pd in response['SearchResults']['Parts']:
@@ -156,11 +157,6 @@ class Mouser():
         else:
             price = float(price)
         return price
-
-
-
-
-
 
     # ------------------------ create_cart -------------------------------------------
     # For Mouser this is just a dummy. We do not create a cart ID so far. It is

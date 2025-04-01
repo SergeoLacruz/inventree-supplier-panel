@@ -38,17 +38,17 @@ class Digikey():
         except Exception:
             part_data['error_status'] = response
             return part_data
-        print(response_json)
+        # print(response_json)
 
         # If we are here, digikey responded. Lets look for errors.
-        try: 
+        try:
             if response_json['status'] != 200:
                 part_data['error_status'] = response_json['title'] + response_json['detail']
                 return part_data
         except Exception:
             pass
-
         print('Remaining requests:', response.headers['X-RateLimit-Remaining'])
+
         # Select the right variation that fits the searched SKU
         for product in response_json['Product']['ProductVariations']:
             if product['DigiKeyProductNumber'] == sku:
@@ -63,7 +63,7 @@ class Digikey():
         part_data['error_status'] = 'OK'
         part_data['number_of_results'] = 1
 
-        # Digikey respondes 0 for the pack quantity on obsolete parts. We change this because
+        # Digikey responds 0 for the pack quantity on obsolete parts. We change this because
         # Inventree does not support 0 here.
         if product['MinimumOrderQuantity'] == 0:
             part_data['pack_quantity'] = '1'
@@ -241,14 +241,15 @@ class Digikey():
         header = {}
         token = {}
         response = Wrappers.post_request(self, url_data, url, headers=header)
-        print('## token:', response)
-        print('## token:', response.content)
         response_json = response.json()
-        print('## token:', response_json['StatusCode'])
-        if response_json['StatusCode'] != 200:
+
+        # On success there is no StatusCode, just in error case
+        try:
             token['status_code'] = response_json['StatusCode']
             token['message'] = response_json['ErrorDetails']
             return (token)
+        except Exception:
+            pass
         print('\033[32mToken refresh SUCCESS\033[0m')
         response_data = response.json()
         self.set_setting('DIGIKEY_TOKEN', response_data['access_token'])
