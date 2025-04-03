@@ -3,74 +3,163 @@
 {% load plugin_extras %}
 {% load i18n %}
 
+<script>
+window.onload = function() {
+    cart_data_string = localStorage.getItem('cart_data');
+    cart_data = JSON.parse(cart_data_string);
+    const segments = window.location.pathname.split("/");
+    const pk = segments.pop() || segments.pop(); 
+    if (cart_data.pk == pk) {
+        CreateTable(cart_data)
+        document.getElementById("cart_key").textContent= cart_data.cart_key;
+    }
+}
+
+function CreateTable(cart_data) {
+    const myTableDiv = document.getElementById("myDynamicTable");
+
+    const table = document.createElement("TABLE");
+    table.classList.add("table");
+    table.classList.add("table-condensed");
+
+    const tableHead = document.createElement("THEAD");
+    table.appendChild(tableHead);
+    let th = document.createElement("TH");
+    th.appendChild(document.createTextNode("IPN"));
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("SKU"));
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Required"));
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Available"));
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Status"));
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Price"));
+    th.style.textAlign = "center";
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Total"));
+    th.style.textAlign = "center";
+    tableHead.appendChild(th);
+    th = document.createElement("TH");
+    th.appendChild(document.createTextNode("Note"));
+    tableHead.appendChild(th);
+
+    const tableBody = document.createElement("TBODY");
+    table.appendChild(tableBody);
+
+    for (let i = 0; i < cart_data.CartItems.length; i++) {
+        const tr = document.createElement("TR");
+        tableBody.appendChild(tr);
+
+        let td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].IPN));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].SKU));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].QuantityRequested));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].QuantityAvailable));
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.classList.add("badge")
+        td.classList.add("badge-left")
+        td.classList.add("rounded-pill")
+        if (cart_data.CartItems[i].QuantityRequested < cart_data.CartItems[i].QuantityAvailable){
+            td.appendChild(document.createTextNode("OK"));
+	    td.classList.add("bg-success")
+        } else {
+            td.appendChild(document.createTextNode("Not OK"));
+	    td.classList.add("bg-danger")
+	}
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].UnitPrice.toFixed(4)));
+        td.style.textAlign = "right";
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].ExtendedPrice.toFixed(4)));
+        td.style.textAlign = "right";
+        tr.appendChild(td);
+        td = document.createElement("TD");
+        td.appendChild(document.createTextNode(cart_data.CartItems[i].Error));
+        tr.appendChild(td);
+    }
+    const tableFoot = document.createElement("TFOOT");
+    table.appendChild(tableFoot);
+    let tf = document.createElement("TD");
+    tf.appendChild(document.createTextNode("Total"));
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tf.appendChild(document.createTextNode(cart_data.currency_code));
+    tf.style.textAlign = "right";
+    tableFoot.appendChild(tf);
+    tf = document.createElement("TD");
+    tf.appendChild(document.createTextNode(cart_data.MerchandiseTotal.toFixed(4)));
+    tf.style.textAlign = "right";
+    tableFoot.appendChild(tf);
+    tf.appendChild(document.createTextNode(""));
+    tableFoot.appendChild(tf);
+    myTableDiv.appendChild(table);
+}
+
+async function JTransferCart(){
+    document.getElementById("loader").style.visibility = "visible";
+    response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
+    const cart_data = await response.json();
+    document.getElementById("loader").style.visibility = "hidden";
+    document.getElementById("result").textContent=cart_data.message;
+    if (cart_data.message == "OK") {
+        document.getElementById("result").className="alert alert-block alert-success";
+    } else {
+        document.getElementById("result").className="alert alert-block alert-danger";
+    }
+    document.getElementById("cart_key").textContent=cart_data.cart_key;
+    localStorage.setItem("cart_data", JSON.stringify(cart_data));
+    CreateTable(cart_data)
+}
+</script>
+
+<style>
+.wheel {
+  border: 5px solid #f3f3f3; 
+  border-top: 5px solid #3498db; 
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 2s linear infinite;
+  visibility: hidden;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
 <button type='button' class='btn btn-dark' onclick="JTransferCart()" title='{% trans "Transfer PO to Supplier" %}'>
 <span class='fas fa-redo-alt'></span> {% trans "Transfer PO" %}
 </button>
-
-{% if plugin.status_code == 200 %}
-	<div class='alert alert-block alert-info'>
-	{{ plugin.status_code }} {{ plugin.message }}
-	</div>
-{% else %}
-	<div class='alert alert-block alert-danger'>
-	{{ plugin.status_code }} {{ plugin.message }}
-	</div>
-{% endif %}
-Created Mouser shopping cart Key: {{ plugin.cart_content.cart_key }}
+<br>
+<div width="30px" id="loader" class="wheel"></div>
+<div class='alert alert-block' id='result'>&nbsp</div>
+Created supplier key: <div id="cart_key">  </div>
 <br>
 
-<table class='table table-condensed'>
-<thead>
-    <tr>
-	<th> {% trans "IPN" %} </th>
-	<th> {% trans "SKU" %} </th>
-	<th> {% trans "Required" %} </th>
-	<th> {% trans "Available" %} </th>
-	<th> {% trans "Status" %} </th>
-	<th align="right"> {% trans "Price" %} </th>
-	<th align="right"> {% trans "Total" %} </th>
-	<th >{% trans "Note" %} </th>
-    </tr>
-</thead>
-<tbody>
-    {% for sub in plugin.cart_content.CartItems %}
-    <tr>
-	<td> {{ sub.IPN }} </td>
-	<td> {{ sub.SKU }} </td>
-	<td> {{ sub.QuantityRequested }} </td>
-	<td> {{ sub.QuantityAvailable }} </td>
-	{% if sub.QuantityRequested > sub.QuantityAvailable %}
-            <td><span class='badge badge-left rounded-pill bg-danger'>{% trans "Not OK" %}</span></td>
-	{% else %}
-            <td><span class='badge badge-left rounded-pill bg-success'>{% trans "OK" %}</span></td>
-	{% endif %}
-	<td align="right"> {{ sub.UnitPrice|floatformat:4 }} </td>
-	<td align="right"> {{ sub.ExtendedPrice|floatformat:4 }} </td>
-	<td> {{ sub.Error }} </td>
-    <tr>
-    {% endfor %}
-</tbody>
-<tfoot>
-    <tr>
-	<td> {% trans "Total" %} </td>
-	<td> </td>
-	<td> </td>
-	<td> </td>
-	<td> </td>
-	<td align="right"> {{ plugin.cart_content.currency_code }} </td>
-	<td align="right"> {{ plugin.cart_content.MerchandiseTotal|floatformat:4 }} </td>
-	<td> </td>
-    </tr>
-</tfoot>
-</table>
-
-
-{% block js_ready %}
-<script>
-async function JTransferCart(){
-    response = await fetch( "{% url 'plugin:suppliercart:transfer-cart' order.pk %}");
-    console.log(response)
-    location.reload();
-}
-</script>
-{% endblock js_ready %}
+<div id="myDynamicTable"></div>

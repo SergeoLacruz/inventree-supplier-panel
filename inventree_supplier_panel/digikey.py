@@ -89,17 +89,18 @@ class Digikey():
             list_name = order.reference + '-00'
         version = int(list_name[len(list_name) - 2:]) + 1
         token = Digikey.refresh_digikey_access_token(self)
-        if not token:
-            return (None)
+
+        if token['status_code'] != 200:
+            cart_data['error_status'] = token['message']
+            return cart_data
         list_name = order.reference + '-' + str(version).zfill(2)
         i = version
         while not Digikey.check_valid_listname(self, list_name):
             i = i + 1
             list_name = order.reference + '-' + str(i).zfill(2)
             if i == version + 20:
-                self.status_code = 0
                 cart_data['ID'] = ''
-                self.message = 'No valid list name found within 20 attempts'
+                cart_data['error_status'] = 'No valid list name found within 20 attempts'
                 return cart_data
         MetaAccess.set_value(self, order, 'DigiKeyListName', list_name)
         url = 'https://api.digikey.com/mylists/v1/lists'
@@ -113,11 +114,12 @@ class Digikey():
             'accept': 'application/json'
         }
         response = Wrappers.post_request(self, json.dumps(url_data), url, headers=header)
-        self.status_code = response.status_code
+#        self.status_code = response.status_code
         cart_data['ID'] = response.json()
-        self.message = 'success'
+        cart_data['error_status'] = 'OK'
         return (cart_data)
 
+    # Error status not checked !!!
     def check_valid_listname(self, list_name):
         url = f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=xxxx'
         header = {
@@ -206,8 +208,7 @@ class Digikey():
                          'cart_key': MetaAccess.get_value(self, order, 'DigiKeyListName'),
                          'currency_code': InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY'),
                          }
-        self.status_code = 200
-        self.message = 'OK'
+        shopping_cart['error_status'] = 'OK'
         return (shopping_cart)
 
     # ------------------------------- get_parts_in_list ----------------------

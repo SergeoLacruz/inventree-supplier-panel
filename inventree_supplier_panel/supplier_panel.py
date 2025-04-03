@@ -172,8 +172,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
             for s in self.registered_suppliers:
                 if order.supplier.pk == self.registered_suppliers[s]['pk'] and has_permission:
-                    if (order.pk != self.PurchaseOrderPK):
-                        self.cart_content = []
                     panels.append({
                         'title': self.registered_suppliers[s]['name'] + ' Actions',
                         'icon': 'fa-user',
@@ -262,21 +260,28 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         for s in self.registered_suppliers:
             if order.supplier.pk == self.registered_suppliers[s]['pk']:
                 supplier = s
+
+        # First create the shopping cart
         cart_data = self.registered_suppliers[supplier]['create_cart'](self, order)
-        if self.status_code != 200:
-            self.cart_content = {}
-            return HttpResponse('Error')
-        self.cart_content = self.registered_suppliers[supplier]['update_cart'](self, order, cart_data['ID'])
-        if self.status_code != 200:
-            return HttpResponse('Error')
+        if cart_data['error_status'] != 'OK':
+            cart_data['message'] = cart_data['error_status']
+            return JsonResponse(cart_data)
+
+        # Then fill it
+        cart_data = self.registered_suppliers[supplier]['update_cart'](self, order, cart_data['ID'])
+        if cart_data['error_status'] != 'OK':
+            cart_data['message'] = cart_data['error_status']
+            return JsonResponse(cart_data)
 
         # Now we transfer the actual prices back into the PO
         for po_item in order.lines.all():
-            for item in self.cart_content['CartItems']:
+            for item in cart_data['CartItems']:
                 if po_item.part.SKU == item['SKU']:
                     po_item.purchase_price = item['UnitPrice']
                     po_item.save()
-        return HttpResponse('OK')
+        cart_data['message'] = 'OK'
+        cart_data['pk'] = pk
+        return JsonResponse(cart_data)
 
 # ---------------------------- add_supplierpart -------------------------------
     def add_supplierpart(self, request):
@@ -324,7 +329,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                        },
                             'Digikey': {'pk': 0,
                                         'name': 'Digikey',
-                                        'po_template': 'supplier_panel/digikey.html',
+                                        'po_template': 'supplier_panel/mouser.html',
                                         'is_registered': False,
                                         'get_partdata': Digikey.get_digikey_partdata_v4,
                                         'update_cart': Digikey.update_digikey_cart,

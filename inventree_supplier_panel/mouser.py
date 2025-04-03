@@ -165,9 +165,8 @@ class Mouser():
 
     def create_mouser_cart(self, order):
         cart_data = {}
-        self.status_code = 200
         cart_data['ID'] = ''
-        self.message = 'Success'
+        cart_data['error_status'] = 'OK'
         return (cart_data)
 
     # ------------------------ update_cart ----------------------------------
@@ -178,6 +177,11 @@ class Mouser():
     def update_mouser_cart(self, order, cart_key):
         country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
         cart_items = []
+        shopping_cart = {}
+
+#        shopping_cart = {'MerchandiseTotal': 356.1, 'CartItems': [{'SKU': '81-GCM31CR70J226ME3L', 'IPN': 'CAP-126007-001', 'QuantityRequested': 500, 'QuantityAvailable': 46114, 'UnitPrice': 0.235, 'ExtendedPrice': 117.5, 'Error': ''}, {'SKU': '963-LMK212AB7106KG-T', 'IPN': 'CAP-086018-002', 'QuantityRequested': 3000, 'QuantityAvailable': 209096, 'UnitPrice': 0.026, 'ExtendedPrice': 78.0, 'Error': ''}, {'SKU': '810-ACT1210E2412PTL0', 'IPN': 'FIL-130002-001', 'QuantityRequested': 100, 'QuantityAvailable': 4972, 'UnitPrice': 1.23, 'ExtendedPrice': 123.0, 'Error': ''}, {'SKU': '71-CRCW08051K00FKEAH', 'IPN': 'RES-085090-001', 'QuantityRequested': 1000, 'QuantityAvailable': 0, 'UnitPrice': 0.029, 'ExtendedPrice': 29.0, 'Error': ''}, {'SKU': '771-PESD5V0F1BLD315', 'IPN': 'DIO-042008-003', 'QuantityRequested': 100, 'QuantityAvailable': 18496, 'UnitPrice': 0.086, 'ExtendedPrice': 8.6, 'Error': ''}], 'cart_key': '1dfb2f50-80e8-4004-bdff-ea5c161c6391', 'currency_code': 'EUR', 'error_status': 'eeee'}
+#        return (shopping_cart)
+
         for item in order.lines.all():
             cart_items.append({'MouserPartNumber': item.part.SKU,
                                'Quantity': int(item.quantity),
@@ -193,12 +197,12 @@ class Mouser():
 
         # Return with error if response was not OK
         if response.status_code != 200:
-            return ({})
+            shopping_cart['error_status'] = str(response.content)
+            return (shopping_cart)
         response = response.json()
         if response['Errors'] != []:
-            self.status_code = 'Mouser answered: '
-            self.message = response['Errors'][0]['Message']
-            return ({})
+            shopping_cart['error_status'] = response['Errors'][0]['Message']
+            return (shopping_cart)
         cart_items = []
         for p in response['CartItems']:
             if p['Errors'] == []:
@@ -225,8 +229,7 @@ class Mouser():
                          'CartItems': cart_items,
                          'cart_key': response['CartKey'],
                          'currency_code': response['CurrencyCode'],
+                         'error_status': 'OK',
                          }
-        self.status_code = 200
-        self.message = 'OK'
         MetaAccess.set_value(self, order, 'MouserCartKey', response['CartKey'])
         return (shopping_cart)
