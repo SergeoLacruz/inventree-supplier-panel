@@ -16,48 +16,44 @@ window.onload = function() {
 }
 
 function CreateTable(cart_data) {
-    const myTableDiv = document.getElementById("myDynamicTable");
+    const tableHeadStrings = ["{% trans 'IPN' %}",
+                              "{% trans 'SKU' %}",
+			      "{% trans 'Required' %}",
+			      "{% trans 'Available' %}",
+			      "{% trans 'Status' %}",
+			      "{% trans 'Price' %}",
+			      "{% trans 'Total' %}",
+			      "{% trans 'Notes' %}"]
+    const tableFootStrings = ["",
+                              "",
+			      "",
+			      "",
+			      "{% trans 'Total' %}",
+			      cart_data.currency_code,
+			      cart_data.MerchandiseTotal.toFixed(4),
+			      ""]
 
+    const myTableDiv = document.getElementById("myDynamicTable");
     const table = document.createElement("TABLE");
     table.classList.add("table");
     table.classList.add("table-condensed");
+    table.classList.add("align-right-6rd-column");
+    table.classList.add("align-right-7rd-column");
 
     const tableHead = document.createElement("THEAD");
     table.appendChild(tableHead);
-    let th = document.createElement("TH");
-    th.appendChild(document.createTextNode("IPN"));
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("SKU"));
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Required"));
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Available"));
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Status"));
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Price"));
-    th.style.textAlign = "center";
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Total"));
-    th.style.textAlign = "center";
-    tableHead.appendChild(th);
-    th = document.createElement("TH");
-    th.appendChild(document.createTextNode("Note"));
+    tableHeadStrings.forEach(function(item, index){
+	th = document.createElement("TH");
+	th.appendChild(document.createTextNode(item));
+	tableHead.appendChild(th);
+    });
     tableHead.appendChild(th);
 
     const tableBody = document.createElement("TBODY");
     table.appendChild(tableBody);
-
     for (let i = 0; i < cart_data.CartItems.length; i++) {
         const tr = document.createElement("TR");
         tableBody.appendChild(tr);
-
         let td = document.createElement("TD");
         td.appendChild(document.createTextNode(cart_data.CartItems[i].IPN));
         tr.appendChild(td);
@@ -84,39 +80,23 @@ function CreateTable(cart_data) {
         tr.appendChild(td);
         td = document.createElement("TD");
         td.appendChild(document.createTextNode(cart_data.CartItems[i].UnitPrice.toFixed(4)));
-        td.style.textAlign = "right";
         tr.appendChild(td);
         td = document.createElement("TD");
         td.appendChild(document.createTextNode(cart_data.CartItems[i].ExtendedPrice.toFixed(4)));
-        td.style.textAlign = "right";
         tr.appendChild(td);
         td = document.createElement("TD");
         td.appendChild(document.createTextNode(cart_data.CartItems[i].Error));
         tr.appendChild(td);
     }
+
     const tableFoot = document.createElement("TFOOT");
     table.appendChild(tableFoot);
-    let tf = document.createElement("TD");
-    tf.appendChild(document.createTextNode("Total"));
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tf.appendChild(document.createTextNode(cart_data.currency_code));
-    tf.style.textAlign = "right";
-    tableFoot.appendChild(tf);
-    tf = document.createElement("TD");
-    tf.appendChild(document.createTextNode(cart_data.MerchandiseTotal.toFixed(4)));
-    tf.style.textAlign = "right";
-    tableFoot.appendChild(tf);
-    tf.appendChild(document.createTextNode(""));
-    tableFoot.appendChild(tf);
+    tableFootStrings.forEach(function(item, index){
+	tf = document.createElement("TD");
+	tf.appendChild(document.createTextNode(item));
+        tf.style.textAlign = "right";
+	tableFoot.appendChild(tf);
+    });
     myTableDiv.appendChild(table);
 }
 
@@ -138,6 +118,15 @@ async function JTransferCart(){
 </script>
 
 <style>
+table.align-right-6rd-column th:nth-child(6),td:nth-child(6) {
+  text-align: right;
+}
+table.align-right-7rd-column th:nth-child(7),td:nth-child(7) {
+  text-align: right;
+}
+table th {
+  padding: 8px;
+}
 .wheel {
   border: 5px solid #f3f3f3; 
   border-top: 5px solid #3498db; 
