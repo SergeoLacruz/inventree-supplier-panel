@@ -1,15 +1,12 @@
 """Basic unit tests for the plugin"""
 
 from httmock import urlmatch, HTTMock, response
-
 from django.test import TestCase
 
 from plugin import InvenTreePlugin
 from plugin.mixins import SettingsMixin
-from part.models import Part, PartCategory
 
 from .mouser import Mouser
-from .supplier_panel import SupplierCartPanel
 
 
 class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
