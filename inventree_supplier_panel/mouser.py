@@ -124,7 +124,6 @@ class Mouser():
                 number_of_results = number_of_results + 1
             else:
                 print('SKU does not match')
-
         part_data['number_of_results'] = number_of_results
         return part_data
 
