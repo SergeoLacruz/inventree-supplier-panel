@@ -322,7 +322,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     registered_suppliers = {'Mouser': {'pk': 0,
                                        'name': 'Mouser',
                                        'po_template': 'supplier_panel/mouser.html',
-                                       'po_js_template': 'supplier_panel/mouser.js',
                                        'is_registered': False,
                                        'get_partdata': Mouser.get_mouser_partdata,
                                        'update_cart': Mouser.update_mouser_cart,
