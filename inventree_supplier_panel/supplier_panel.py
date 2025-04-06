@@ -15,6 +15,7 @@ from common.models import InvenTreeSetting
 from .version import PLUGIN_VERSION
 from .mouser import Mouser
 from .digikey import Digikey
+from .farnell import Farnell
 from .request_wrappers import Wrappers
 
 import json
@@ -28,7 +29,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Shopping Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2025-05-04:00:00"
+    PUBLISH_DATE = "2025-04-06:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a supplier shopping cart."
     VERSION = PLUGIN_VERSION
     COUNTRY_CODES = {'AUD': 'AU',
@@ -52,6 +53,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'description': 'Primary key of the Digikey supplier',
             'model': 'company.company',
         },
+        'FARNELL_PK': {
+            'name': 'Farnell Supplier ID',
+            'description': 'Primary key of the Farnell supplier',
+            'model': 'company.company',
+        },
         'MOUSERCARTKEY': {
             'name': 'Mouser cart API key',
             'description': 'Place here your key for the Mouser shopping cart API',
@@ -66,6 +72,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             'choices': [('English', 'Mouser answers in English'),
                         ('German', 'Mouser answers in German')],
             'default': 'German',
+        },
+        'FARNELLSEARCHKEY': {
+            'name': 'Farnell search API key',
+            'description': 'Place here your key for the Farnell search API',
         },
         'DIGIKEY_CLIENT_ID': {
             'name': 'Digikey ID',
@@ -162,6 +172,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.registered_suppliers['Digikey']['is_registered'] = True
         except Exception:
             self.registered_suppliers['Digikey']['is_registered'] = False
+        try:
+            self.registered_suppliers['Farnell']['pk'] = int(self.get_setting('FARNELL_PK'))
+            self.registered_suppliers['Farnell']['is_registered'] = True
+        except Exception:
+            self.registered_suppliers['Farnell']['is_registered'] = False
 
         # For purchase orders: PO transfer
         if isinstance(view, PurchaseOrderDetail):
@@ -334,5 +349,13 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                         'get_partdata': Digikey.get_digikey_partdata_v4,
                                         'update_cart': Digikey.update_digikey_cart,
                                         'create_cart': Digikey.create_digikey_cart,
+                                        },
+                            'Farnell': {'pk': 0,
+                                        'name': 'Farnell',
+                                        'po_template': 'supplier_panel/mouser.html',
+                                        'is_registered': False,
+                                        'get_partdata': Farnell.get_farnell_partdata,
+                                        'update_cart': '',
+                                        'create_cart': '',
                                         }
                             }

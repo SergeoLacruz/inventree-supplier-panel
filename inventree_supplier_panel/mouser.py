@@ -128,7 +128,9 @@ class Mouser():
         return part_data
 
     # ------------------------------- get_mouser_package --------------------------
-    # Extracts the available packages from the Mouser part data json
+    # Extracts the available packages from the Mouser part data json. The language
+    # the Mouser uses for the anwser cannot be set. It seems to be fixed toe the region
+    # where the request comes from. There is a setting for this with two values so far.
     def get_mouser_package(self, part_data):
 
         att_names = {'packaging': {'German': 'Verpackung', 'English': 'Packaging'}}
@@ -169,9 +171,10 @@ class Mouser():
         return (cart_data)
 
     # ------------------------ update_cart ----------------------------------
-    # The Mouser part.
     # Actually we send an empty CartKey. So Mouser creates a new key each time
-    # the button is pressed. This should be improved in future.
+    # the button is pressed. This should be improved in future. It is mandatory
+    # to send a county code. The code is dreived from the Inventree currency setting.
+    # This might not always fit.
 
     def update_mouser_cart(self, order, cart_key):
         country_code = self.COUNTRY_CODES[InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')]
