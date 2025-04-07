@@ -1,1 +1,1 @@
-PLUGIN_VERSION = "0.5.0.dev"
+PLUGIN_VERSION = "0.5.0"
