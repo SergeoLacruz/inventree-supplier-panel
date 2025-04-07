@@ -110,14 +110,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # disabled. The button for Digikey token creation is also here.
 
     def get_settings_content(self, request):
-        if self.get_setting('DIGIKEY_PK') == '':
-            digikey_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
-        else:
-            digikey_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
-        if self.get_setting('MOUSER_PK') == '':
-            mouser_enabled = '<span class="badge badge-left rounded-pill bg-danger">Disabled</span>'
-        else:
-            mouser_enabled = '<span class="badge badge-left rounded-pill bg-success">Enabled</span>'
         client_id = self.get_setting('DIGIKEY_CLIENT_ID')
         base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
         if base_url == '':
@@ -139,12 +131,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         </ol>
         <p>Status:</p>
         <table class='table table-condensed'>
-           <tr>
-           <td>Mouser</td><td>{mouser_enabled}</td>
-           </tr>
-           <tr>
-           <td>Digikey</td><td>{digikey_enabled}</td>
-           </tr>
            <tr>
            <td>Server Base URL</td><td>{base_url_state}</td>
            </tr>
@@ -356,6 +342,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                         'is_registered': False,
                                         'get_partdata': Farnell.get_farnell_partdata,
                                         'update_cart': '',
-                                        'create_cart': '',
+                                        'create_cart': Farnell.create_farnell_cart,
                                         }
                             }

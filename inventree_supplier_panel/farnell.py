@@ -40,3 +40,12 @@ class Farnell():
             new_price = pb['cost']
             part_data['price_breaks'].append({'Quantity': pb['from'], 'Price': new_price, 'Currency': currency})
         return part_data
+
+
+
+    def create_farnell_cart(self, order):
+        cart_data = {}
+        cart_data['ID'] = ''
+        cart_data['error_status'] = 'Not supported yet'
+        return (cart_data)
+
