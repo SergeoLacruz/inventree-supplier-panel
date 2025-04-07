@@ -29,12 +29,19 @@ your suppliers. If this is not set the panel will not be displayed and a error i
 Place here the primary key of the supplier Digikey in your system. You can select from a list of
 your suppliers. If this is not set the panel will not be displayed and a error is raised.
 
+### Farnell Supplier ID
+Place here the primary key of the supplier Farnell in your system. You can select from a list of
+your suppliers. If this is not set the panel will not be displayed and a error is raised.
+
 ### Mouser cart API key
 Place here your Mouser key for manipulating shopping carts. You find it in your Mouser account.
 
 ### Mouser search API key
-Place here your Mouser key for part search. You need to sing up for this with Mouser seperately.
-The key is not listet in you Mouser account.
+Place here your Mouser key for part search. You need to sing up for this with Mouser separately.
+The key is not listed in you Mouser account.
+
+### Farnell search API key
+Place here your Farnell key for part search.
 
 ### Digikey ID and Digikey Secret
 This is the client ID and the client secret that has been generated in the Digkey API admin WEB portal.
@@ -138,10 +145,7 @@ https://192.168.1.40:8123/plugin/suppliercart/digikeytoken/
 
 In this example 192.168.1.40:8123 is the local IP address and port where my
 InvenTree development server runs. Place here the appropriate address. The
-settings page of the plugin gives some help:
-
-![setup](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/setup.png)
-
+settings page of the plugin shows the callback URL.
 The Callback URL is what you need to put into the Digikey page.
 
 In Production products section make sure that Product information and MyLists is activated.
@@ -197,6 +201,13 @@ list in the correct currency. Unfortunately the currency code is not sent back. 
 thing Digikey sends is a currency symbol but no info if $ is USD, AUD or whatever kind of Dollar.
 Mouser does not allow to set the currency. Mouser selects the currency automatically
 based on the country where the request comes from.
+
+## Working with Farnell
+Farnell shopping carts are not supported but automatic supplier part creation is
+possible es described below. You need a Farnell access key which you enter into the settings.
+Farnell requires a shop (region) to be sand along with the request. The currency
+for the price breaks is calculated based thereon. Actually the shop and the currency
+is based in the code. For other countries than Germany this might need to be changed.
 
 ## Automatically create supplierparts
 The plugin can create supplierparts based on the supplier part number. For users with
@@ -271,5 +282,5 @@ the runserver to runsslserver in tasks.py.
 It might happen that you run into issues with country and language specific settings. The plugin
 was developed and tested in Germany. Mouser e.g. sends back strings in german language and prices
 in Euro. There seems to be no way to change that. Support for other contries is limited as
-there are no testing possibilities at the moment. Please open an issue in case of problems. 
+there are no testing possibilities at the moment. Please open an issue in case of problems.
 Testing outside of Germany will be helpful.
