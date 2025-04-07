@@ -5,6 +5,9 @@ class Farnell():
     # --------------------------- get_farnell_partdata -----------------------------
     def get_farnell_partdata(self, sku, options):
 
+        # This is OK for Germany. In other countries this might need to be changed.
+        # Farnell does not return the currency for the prices, justi the numbers.
+        # The currency depends on the selected shop.
         store = 'de.farnell.com'
         currency = 'EUR'
 
@@ -14,17 +17,24 @@ class Farnell():
         path = 'https://api.element14.com/catalog/products?'
         path_string = path + 'term=id:' + sku + '&storeInfo.id=' + store + '&resultsSettings.responseGroup=large&callInfo.responseDataFormat=json&callinfo.apiKey=' + access_key
         response = Wrappers.get_request(self, path_string, header)
+
+        # Try if a valid json has se been received. Otherwise return the content
+        # of the response
         try:
             response = response.json()
         except Exception:
             part_data['error_status'] = str(response.content)
             return part_data
+
+        # If Farnell has problems with the request there will be an error key in the json
         try:
             part_data['error_status'] = str(response['error'])
             return part_data
         except Exception:
             pass
         response = response['premierFarnellPartNumberReturn']
+
+        # If we are here, everything seems fine so far. Lets grab the data.
         # print(response)
         part_data['error_status'] = 'OK'
         part_data['number_of_results'] = response['numberOfResults']
@@ -41,11 +51,10 @@ class Farnell():
             part_data['price_breaks'].append({'Quantity': pb['from'], 'Price': new_price, 'Currency': currency})
         return part_data
 
-
-
+    # --------------------------- create_farnell_cart -------------------------
+    # This is just a dummy so far.
     def create_farnell_cart(self, order):
         cart_data = {}
         cart_data['ID'] = ''
         cart_data['error_status'] = 'Not supported yet'
         return (cart_data)
-
