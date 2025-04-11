@@ -218,6 +218,10 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
         except Exception:
             pass
+        try:
+            self.registered_suppliers['Farnell']['pk'] = int(self.get_setting('FARNELL_PK'))
+        except Exception:
+            pass
 
         part_data = {}
         for s in self.registered_suppliers:
@@ -258,6 +262,14 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
         self.PurchaseOrderPK = int(pk)
         order = PurchaseOrder.objects.filter(id=pk).all()[0]
+        try:
+            self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
+        except Exception:
+            pass
+        try:
+            self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
+        except Exception:
+            pass
         for s in self.registered_suppliers:
             if order.supplier.pk == self.registered_suppliers[s]['pk']:
                 supplier = s

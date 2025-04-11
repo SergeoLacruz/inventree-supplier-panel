@@ -34,8 +34,14 @@ class Farnell():
             pass
         response = response['premierFarnellPartNumberReturn']
 
+        # print('Response: ', response)
+
+        # Lets look if parts have been reported
+        if response['numberOfResults'] == 0:
+            part_data['error_status'] = f'Part with SKU "{sku}" not found in Farnell catalog!'
+            return part_data
+
         # If we are here, everything seems fine so far. Lets grab the data.
-        # print(response)
         part_data['error_status'] = 'OK'
         part_data['number_of_results'] = response['numberOfResults']
         part_data['price_breaks'] = []

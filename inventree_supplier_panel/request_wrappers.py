@@ -19,7 +19,7 @@ class Wrappers():
             response = requests.post(path,
                                      proxies=proxies,
                                      data=post_data,
-                                     timeout=5,
+                                     timeout=15,
                                      headers=headers
                                      )
         except Exception as e:
@@ -39,7 +39,7 @@ class Wrappers():
         try:
             response = requests.get(path,
                                     proxies=proxies,
-                                    timeout=5,
+                                    timeout=15,
                                     headers=headers
                                     )
         except Exception as e:
