@@ -29,7 +29,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
     SLUG = "suppliercart"
     TITLE = "Create Shopping Cart"
     AUTHOR = "Michael"
-    PUBLISH_DATE = "2025-04-06:00:00"
+    PUBLISH_DATE = "2025-06-24:00:00"
     DESCRIPTION = "This plugin allows to transfer a PO into a supplier shopping cart."
     VERSION = PLUGIN_VERSION
     COUNTRY_CODES = {'AUD': 'AU',
@@ -301,6 +301,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         data = json.loads(request.body)
         part = Part.objects.filter(id=data['pk'])[0]
         supplier = Company.objects.filter(id=data['supplier'])[0]
+        data['sku'] = data['sku'].strip()
         if (data['sku'] == ''):
             return JsonResponse({"message": "Please provide part number"})
         manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
@@ -308,7 +309,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             return JsonResponse({"message": "Part has no manufacturer part"})
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
-            if sp.SKU.strip() == data['sku'].strip():
+            if sp.SKU.strip() == data['sku']:
                 return JsonResponse({"message": "Supplierpart with this SKU already exists"})
 
         # Here start the new interface
