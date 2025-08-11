@@ -16,6 +16,7 @@ from .version import PLUGIN_VERSION
 from .mouser import Mouser
 from .digikey import Digikey
 from .farnell import Farnell
+from .meta_access import MetaAccess
 from .request_wrappers import Wrappers
 
 import json
@@ -294,6 +295,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     po_item.save()
         cart_data['message'] = 'OK'
         cart_data['pk'] = pk
+        MetaAccess.set_value(self, order, 'cart', cart_data)
         return JsonResponse(cart_data)
 
 # ---------------------------- add_supplierpart -------------------------------

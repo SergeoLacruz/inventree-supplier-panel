@@ -49,7 +49,6 @@ If you created more than 1000 requests within 24 hours:
 from common.models import InvenTreeSetting
 
 from inventree_supplier_panel.request_wrappers import Wrappers
-from inventree_supplier_panel.meta_access import MetaAccess
 import re
 import json
 
@@ -230,5 +229,4 @@ class Mouser():
                          'currency_code': response['CurrencyCode'],
                          'error_status': 'OK',
                          }
-        MetaAccess.set_value(self, order, 'MouserCartKey', response['CartKey'])
         return (shopping_cart)

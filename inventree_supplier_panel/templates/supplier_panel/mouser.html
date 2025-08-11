@@ -5,14 +5,11 @@
 
 <script>
 window.onload = function() {
-    cart_data_string = localStorage.getItem('cart_data');
-    cart_data = JSON.parse(cart_data_string);
-    const segments = window.location.pathname.split("/");
-    const pk = segments.pop() || segments.pop(); 
-    if (cart_data.pk == pk) {
-        CreateTable(cart_data)
-        document.getElementById("cart_key").textContent= cart_data.cart_key;
-    }
+      cart_data = "{{ order.metadata }}"
+      cart_datay = cart_data.replace(/&#x27;/gm,'"')
+      cart_data = JSON.parse(cart_datay)
+      CreateTable(cart_data.SupplierCart.cart)
+      document.getElementById("cart_key").textContent= cart_data.SupplierCart.cart.cart_key;
 }
 
 function CreateTable(cart_data) {
@@ -113,7 +110,7 @@ async function JTransferCart(){
         document.getElementById("result").className="alert alert-block alert-danger";
     }
     document.getElementById("cart_key").textContent=cart_data.cart_key;
-    localStorage.setItem("cart_data", JSON.stringify(cart_data));
+//    localStorage.setItem("cart_data", JSON.stringify(cart_data));
     CreateTable(cart_data)
 }
 </script>
