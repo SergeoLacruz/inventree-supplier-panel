@@ -259,8 +259,9 @@ function when we push the button. Let's have a look on the names and how they be
 In the picture you see the relevant lines in the python and java code. The names in the coloured boxes need to match.
 In case something does not fit the panel will not render and you will get an error message.
 
-The response for the shopping cart creation is not stored in the InvenTree database. 
-Only the last one is just in the local storage of your browser and always overwritten.
+The response for the shopping cart creation is stored in the metadata field of the order.
+So if you reopen an order at a later point in time the shopping cart data is still there
+but may be outdatedy.
 
 ## Issues
 
