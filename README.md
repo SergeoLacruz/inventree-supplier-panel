@@ -4,13 +4,14 @@
 
 This is a plugin for [InvenTree](https://inventree.org), which uploads a purchase order
 to a supplier WEB page. After using this plugin you can directly order the parts on
-supplier WEB page. You need to have a supplier account and a different kinds of API keys
+supplier WEB page. You need to have a supplier account and different kinds of API keys
 depending on the supplier.
 The data will be created in your supplier account. Each time you transfer your PO
-a new data set cart will be created. So make sure that you delete them from time to time in
+a new data set will be created. So make sure that you delete them from time to time in
 the supplier WEB interface.
 The plugin also helps to create supplierparts based on the supplier part number.
-Actually the plugin supports two suppliers: Mouser and Digikey.
+Actually the plugin supports three suppliers: Mouseri, Digikey and Farnell. For Farnell you can
+just add supplierparts. There is no shopping cart function yet.
 
 ## Installation
 The plugin is on pypi. You can install it by just calling:
