@@ -10,7 +10,7 @@ The data will be created in your supplier account. Each time you transfer your P
 a new data set will be created. So make sure that you delete them from time to time in
 the supplier WEB interface.
 The plugin also helps to create supplierparts based on the supplier part number.
-Actually the plugin supports three suppliers: Mouseri, Digikey and Farnell. For Farnell you can
+Actually the plugin supports three suppliers: Mouser, Digikey and Farnell. For Farnell you can
 just add supplierparts. There is no shopping cart function yet.
 
 ## Installation
@@ -50,7 +50,7 @@ Copy it from there to the InvenTree settings.
 
 ### Digikey token and Digikey refresh token
 These fields are filled automatically. The Digikey API requires two tokens with different life times.
-Please refer to the Digikey section for more information.
+Please refer to the Digikey section for more information. Do not edit those.
 
 ### Proxy CON
 Protocol to proxy server e.g. https
@@ -68,8 +68,10 @@ A proxy can also be set using the environment variables PROXY_CON and PROXY_URL.
 values in the environment variables overwrite InvenTree settings.
 
 ### Base URL
-The base URL for server instance is in the Server Settings category of InvenTree. The plugin
-uses this setting to build the OAuth callback for Digikey. Put the correct URL here.
+The base URL for server instance is in the Server Settings of InvenTree config. The plugin
+uses it to build the OAuth callback for Digikey. Put the correct URL into the config file.
+
+The button at the bottom of the settings page initiates the Digikey token generation.
 
 ## What the plugin does
 
@@ -79,8 +81,7 @@ active PO. On the panel there are three things:
 
 - a button that starts the transfer of your PO to the supplier
 - a status bar that shows error messages
-- a table that contains the created Mouser shopping cart.
-- in case of Digikey a button that initiates the token generation.
+- a table that contains the created shopping cart.
 
 ![Mouser Panel](https://github.com/SergeoLacruz/inventree-supplier-panel/blob/master/pictures/mouser_panel.png)
 
@@ -206,9 +207,9 @@ based on the country where the request comes from.
 ## Working with Farnell
 Farnell shopping carts are not supported but automatic supplier part creation is
 possible es described below. You need a Farnell access key which you enter into the settings.
-Farnell requires a shop (region) to be sand along with the request. The currency
+Farnell requires a shop (region) to be send along with the request. The currency
 for the price breaks is calculated based thereon. Actually the shop and the currency
-is based in the code. For other countries than Germany this might need to be changed.
+is fixed in the code. For other countries than Germany this might need to be changed.
 
 ## Automatically create supplierparts
 The plugin can create supplierparts based on the supplier part number. For users with
