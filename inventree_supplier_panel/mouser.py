@@ -206,6 +206,9 @@ class Mouser():
             if p['Errors'] == []:
                 cart_items.append({'SKU': p['MouserPartNumber'],
                                    'IPN': p['CartItemCustPartNumber'],
+                                   'Manufacturer': p['Manufacturer'],
+                                   'MPN': p['MfrPartNumber'],
+                                   'Description': p['Description'],
                                    'QuantityRequested': p['Quantity'],
                                    'QuantityAvailable': p['MouserATS'],
                                    'UnitPrice': p['UnitPrice'],

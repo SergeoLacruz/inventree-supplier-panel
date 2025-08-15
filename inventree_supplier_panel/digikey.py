@@ -172,6 +172,9 @@ class Digikey():
                 if pack_option['MinimumOrderQuantity'] > p['Quantities'][0]['QuantityRequested']:
                     cart_items.append({'SKU': p['DigiKeyPartNumber'],
                                        'IPN': p['CustomerReference'],
+                                       'MPN': '',
+                                       'Manufacturer': '',
+                                       'Description': '',
                                        'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
                                        'QuantityAvailable': p['QuantityAvailable'],
                                        'UnitPrice': 0,
@@ -185,6 +188,9 @@ class Digikey():
                         pack = pack_option['PackType']
                     cart_items.append({'SKU': p['DigiKeyPartNumber'],
                                        'IPN': p['CustomerReference'],
+                                       'MPN': p['ManufacturerPartNumber'],
+                                       'Manufacturer': p['Manufacturer'],
+                                       'Description': p['Description'],
                                        'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
                                        'QuantityAvailable': p['QuantityAvailable'],
                                        'UnitPrice': pack_option['CalculatedUnitPrice'],
@@ -195,6 +201,9 @@ class Digikey():
             else:
                 cart_items.append({'SKU': p['RequestedPartNumber'],
                                    'IPN': p['CustomerReference'],
+                                   'MPN': '',
+                                   'Manufacturer': '',
+                                   'Description': '',
                                    'QuantityRequested': p['Quantities'][0]['QuantityRequested'],
                                    'QuantityAvailable': p['QuantityAvailable'],
                                    'UnitPrice': 0,
