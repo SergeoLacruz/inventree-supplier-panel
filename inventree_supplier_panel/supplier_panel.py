@@ -20,6 +20,7 @@ from .meta_access import MetaAccess
 from .request_wrappers import Wrappers
 
 import json
+from datetime import datetime
 
 
 class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
@@ -295,6 +296,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                     po_item.save()
         cart_data['message'] = 'OK'
         cart_data['pk'] = pk
+        cart_data['cart_date'] = datetime.today().strftime('%Y-%m-%d')
         MetaAccess.set_value(self, order, 'cart', cart_data)
         return JsonResponse(cart_data)
 

@@ -38,7 +38,6 @@ class Digikey():
         except Exception:
             part_data['error_status'] = response
             return part_data
-        # print(response_json)
 
         # If we are here, digikey responded. Lets look for errors.
         try:

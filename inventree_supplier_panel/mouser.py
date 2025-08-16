@@ -213,7 +213,7 @@ class Mouser():
                                    'QuantityAvailable': p['MouserATS'],
                                    'UnitPrice': p['UnitPrice'],
                                    'ExtendedPrice': p['ExtendedPrice'],
-                                   'Error': ''
+                                   'Error': p['PackagingChoice']
                                    })
             else:
                 cart_items.append({'SKU': p['MouserPartNumber'],

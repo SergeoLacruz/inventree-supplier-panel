@@ -10,6 +10,7 @@ window.onload = function() {
       cart_data = JSON.parse(cart_datay)
       CreateTable(cart_data.SupplierCart.cart)
       document.getElementById("cart_key").textContent= cart_data.SupplierCart.cart.cart_key;
+      document.getElementById("cart_date").textContent= cart_data.SupplierCart.cart.cart_date;
 }
 
 function CreateTable(cart_data) {
@@ -110,7 +111,7 @@ async function JTransferCart(){
         document.getElementById("result").className="alert alert-block alert-danger";
     }
     document.getElementById("cart_key").textContent=cart_data.cart_key;
-//    localStorage.setItem("cart_data", JSON.stringify(cart_data));
+    document.getElementById("cart_date").textContent= cart_data.SupplierCart.cart.cart_date;
     CreateTable(cart_data)
 }
 </script>
@@ -146,7 +147,9 @@ table th {
 <br>
 <div width="30px" id="loader" class="wheel"></div>
 <div class='alert alert-block' id='result'>&nbsp</div>
-Created supplier key: <div id="cart_key">  </div>
+<b>Created supplier key:</b> <span id="cart_key">  </span>
+<br>
+<b>Cart date:</b> <span id="cart_date">  </span>
 <br>
 
 <div id="myDynamicTable"></div>
