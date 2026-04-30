@@ -275,8 +275,7 @@ keys. We use a team key to solve this.
 
 ### Missing DigiKey features
 Digikey allows more features like customer ID and list owners. These are not implemented so far.
-The plugin supports just a single Digikey organization and user. Some APIs require a createdBy
-value to be set. xxxx works fine so far.
+The plugin supports just a single Digikey organization and user.
 
 ### https Callback
 The OAuto callback setting in your Digikey WEB account allows only https. http is not allowed.
