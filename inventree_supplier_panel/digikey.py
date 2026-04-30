@@ -38,6 +38,7 @@ class Digikey():
         except Exception:
             part_data['error_status'] = response
             return part_data
+        # print(response_json)
 
         # If we are here, digikey responded. Lets look for errors.
         try:
@@ -120,7 +121,7 @@ class Digikey():
 
     # Error status not checked !!!
     def check_valid_listname(self, list_name):
-        url = f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}?createdBy=xxxx'
+        url = f'https://api.digikey.com/mylists/v1/lists/validate/{list_name}'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
@@ -153,6 +154,7 @@ class Digikey():
 
         # Now we get the parts from the generated list
         parts_in_list = Digikey.get_parts_in_list(self, list_id)
+        # print(parts_in_list)
         cart_items = []
         merchandise_total = 0
         for p in parts_in_list['PartsList']:
@@ -223,7 +225,7 @@ class Digikey():
     def get_parts_in_list(self, list_id):
         currency_code = InvenTreeSetting.get_setting('INVENTREE_DEFAULT_CURRENCY')
         country_code = self.COUNTRY_CODES[currency_code]
-        url = f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso={country_code}&currencyIso={currency_code}&languageIso={country_code}&createdBy=xxxx&pricingCountryIso={country_code}'
+        url = f'https://api.digikey.com/mylists/v1/lists/{list_id}/parts/?countryIso={country_code}&currencyIso={currency_code}&languageIso={country_code}'
         header = {
             'Authorization': f"{'Bearer'} {self.get_setting('DIGIKEY_TOKEN')}",
             'X-DIGIKEY-Client-Id': self.get_setting('DIGIKEY_CLIENT_ID'),
