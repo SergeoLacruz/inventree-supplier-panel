@@ -4,12 +4,14 @@
 async function SelectCompany(){
     const sku = document.getElementById("sku").value
     const supplier = parseInt(document.getElementById("supplier").value)
+    const mpart = parseInt(document.getElementById("manupart").value)
     const pk = {{ part.pk }}
     const cmd_url="{% url 'plugin:suppliercart:add-supplierpart' %}";
     data = {
 	sku: sku,
 	supplier: supplier,
         pk: pk,
+        mpart: mpart,
     }
     document.getElementById("loader").style.visibility = "visible";
     response = await inventreeFormDataUpload(url=cmd_url, data=JSON.stringify(data));
@@ -25,8 +27,8 @@ async function SelectCompany(){
 
 <style>
 .wheel {
-  border: 5px solid #f3f3f3; 
-  border-top: 5px solid #3498db; 
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -46,11 +48,11 @@ async function SelectCompany(){
 <tbody>
     <tr>
         <td> Select Supplier </td>
-        <td> 
+        <td>
 	    <select id="supplier">
 		{% for supplier,data in plugin.registered_suppliers.items %}
                 {% if data.is_registered == True %}
-		   
+
 		<option value="{{ data.pk }}"> {{ data.name }}</option>
                 {% endif %}
 		{% endfor %}
@@ -58,8 +60,24 @@ async function SelectCompany(){
         </td>
     </tr>
     <tr>
+        <td>
+          {% if plugin.manufacturer_parts.all|length == 0 %}
+              <div style="color:red;"> Part has no manufacturer part </div>
+          {% else %}
+              <div> Select Manufacturer Part </div>
+          {% endif %}
+        </td>
+        <td>
+	    <select id="manupart">
+		{% for data in plugin.manufacturer_parts %}
+		<option value="{{ data.pk }}"> {{ data.MPN }}</option>
+		{% endfor %}
+	    </select>
+        </td>
+    </tr>
+    <tr>
         <td> Exact supplier part number from suppliers WEB page</td>
-        <td> 
+        <td>
             <input id="sku" type="text" value="">
         </td>
     </tr>
@@ -67,7 +85,11 @@ async function SelectCompany(){
 <tfoot>
     <tr>
 	<td>
+          {% if plugin.manufacturer_parts.all|length == 0 %}
+            <input type="button" value="Add Part" onclick="SelectCompany()" title='Add Part' disabled />
+          {% else %}
             <input type="button" value="Add Part" onclick="SelectCompany()" title='Add Part' />
+          {% endif %}
 	</td>
 	<td> </td>
     </tr>

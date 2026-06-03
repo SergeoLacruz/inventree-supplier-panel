@@ -190,6 +190,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             for s in self.registered_suppliers:
                 show_panel = show_panel or self.registered_suppliers[s]['is_registered']
             part = view.get_object()
+            self.manufacturer_parts = ManufacturerPart.objects.filter(part=part.pk)
             if has_permission and show_panel and part.purchaseable:
                 panels.append({
                     'title': 'Automatic Supplier parts',
@@ -308,9 +309,7 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
         data['sku'] = data['sku'].strip()
         if (data['sku'] == ''):
             return JsonResponse({"message": "Please provide part number"})
-        manufacturer_part = ManufacturerPart.objects.filter(part=data['pk'])
-        if len(manufacturer_part) == 0:
-            return JsonResponse({"message": "Part has no manufacturer part"})
+        manufacturer_part = ManufacturerPart.objects.filter(id=data['mpart'])[0]
         supplier_parts = SupplierPart.objects.filter(part=data['pk'])
         for sp in supplier_parts:
             if sp.SKU.strip() == data['sku']:
@@ -322,9 +321,11 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             return JsonResponse({"message": data['error_status']})
         if data['number_of_results'] == 0:
             return JsonResponse({"message": "Part not found"})
+        if data['MPN'] != manufacturer_part.MPN:
+            return JsonResponse({"message": "MPN does not match"})
         sp = SupplierPart.objects.create(part=part,
                                          supplier=supplier,
-                                         manufacturer_part=manufacturer_part[0],
+                                         manufacturer_part=manufacturer_part,
                                          SKU=data['SKU'],
                                          link=data['URL'],
                                          note=data['lifecycle_status'],
