@@ -214,8 +214,10 @@ is fixed in the code. For other countries than Germany this might need to be cha
 ## Automatically create supplierparts
 The plugin can create supplierparts based on the supplier part number. For users with
 edit part permission a panel called "Automatic Supplier parts" is shown. Here
-you can select the supplier and add the exact supplier part number. The plugin
-will create a corresponding  supplierpart. I can fill the following part fields automatically:
+you can select the supplier, the manufacturer part and the exact supplier part number.
+The part needs to have at least one manufacturer part. Otherwise the function is
+disabled. The plugin will create a corresponding  supplierpart. I can fill the
+following part fields automatically:
 
 - Supplier part number
 - URL
