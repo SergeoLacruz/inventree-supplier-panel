@@ -5,6 +5,8 @@ async function SelectCompany(){
     const sku = document.getElementById("sku").value
     const supplier = parseInt(document.getElementById("supplier").value)
     const mpart = parseInt(document.getElementById("manupart").value)
+    const ignoreMPNCheck = document.getElementById("ignoreMPNCheck").checked
+
     const pk = {{ part.pk }}
     const cmd_url="{% url 'plugin:suppliercart:add-supplierpart' %}";
     data = {
@@ -12,6 +14,7 @@ async function SelectCompany(){
 	supplier: supplier,
         pk: pk,
         mpart: mpart,
+        ignoreMPNCheck: ignoreMPNCheck,
     }
     document.getElementById("loader").style.visibility = "visible";
     response = await inventreeFormDataUpload(url=cmd_url, data=JSON.stringify(data));
@@ -79,6 +82,12 @@ async function SelectCompany(){
         <td> Exact supplier part number from suppliers WEB page</td>
         <td>
             <input id="sku" type="text" value="">
+        </td>
+    </tr>
+    <tr>
+        <td> Ignore MPN mismatch </td>
+        <td>
+            <input id="ignoreMPNCheck" type="checkbox" value="ignore">
         </td>
     </tr>
 </tbody>

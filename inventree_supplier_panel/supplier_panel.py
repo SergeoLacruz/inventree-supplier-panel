@@ -303,26 +303,26 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
 # ---------------------------- add_supplierpart -------------------------------
     def add_supplierpart(self, request):
-        data = json.loads(request.body)
-        part = Part.objects.filter(id=data['pk'])[0]
-        supplier = Company.objects.filter(id=data['supplier'])[0]
-        data['sku'] = data['sku'].strip()
-        if (data['sku'] == ''):
+        rdata = json.loads(request.body)
+        part = Part.objects.filter(id=rdata['pk'])[0]
+        supplier = Company.objects.filter(id=rdata['supplier'])[0]
+        rdata['sku'] = rdata['sku'].strip()
+        if (rdata['sku'] == ''):
             return JsonResponse({"message": "Please provide part number"})
-        manufacturer_part = ManufacturerPart.objects.filter(id=data['mpart'])[0]
-        supplier_parts = SupplierPart.objects.filter(part=data['pk'])
+        manufacturer_part = ManufacturerPart.objects.filter(id=rdata['mpart'])[0]
+        supplier_parts = SupplierPart.objects.filter(part=rdata['pk'])
         for sp in supplier_parts:
-            if sp.SKU.strip() == data['sku']:
+            if sp.SKU.strip() == rdata['sku']:
                 return JsonResponse({"message": "Supplierpart with this SKU already exists"})
 
         # Here start the new interface
-        data = self.get_partdata(data['supplier'], data['sku'], 'exact')
+        data = self.get_partdata(rdata['supplier'], rdata['sku'], 'exact')
         if data['error_status'] != 'OK':
             return JsonResponse({"message": data['error_status']})
         if data['number_of_results'] == 0:
             return JsonResponse({"message": "Part not found"})
-        if data['MPN'] != manufacturer_part.MPN:
-            return JsonResponse({"message": "MPN does not match"})
+        if (data['MPN'] != manufacturer_part.MPN) and not rdata['ignoreMPNCheck']:
+            return JsonResponse({"message": "MPN does not match. " + data['MPN'] + " != " + manufacturer_part.MPN})
         sp = SupplierPart.objects.create(part=part,
                                          supplier=supplier,
                                          manufacturer_part=manufacturer_part,
