@@ -203,3 +203,34 @@ class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
         with HTTMock(mock):
             data = Farnell.get_farnell_partdata(self, 'blabla', 'none')
         self.assertEqual(data['error_status'], 'Part with SKU "blabla" not found in Farnell catalog!', 'Test one result')
+
+        # Search with one result
+        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        content = {
+            'premierFarnellPartNumberReturn': {
+                'numberOfResults': 1,
+                'products': [{
+                    'displayName': 'VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A',
+                    'vendorName': 'VISHAY',
+                    'translatedMinimumOrderQuality': 10,
+                    'unitOfMeasure': 'STÜCK (GURTABSCHNITT)',
+                    'translatedManufacturerPartNumber': 'CRCW04020000Z0ED',
+                    'sku': '1469661',
+                    'productStatus': 'STOCKED',
+                    'prices': [{'to': 99, 'from': 10, 'cost': 0.0104}, {'to': 499, 'from': 100, 'cost': 0.0086}, {'to': 2499, 'from': 500, 'cost': 0.0069}, {'to': 4999, 'from': 2500, 'cost': 0.0061}, {'to': 999999999, 'from': 5000, 'cost': 0.0043}]
+                }]}}
+
+        @urlmatch(netloc=r'(.*\.)?api\.element14\.com.*')
+        def mock(url, request):
+            return response(200, content, headers, None, 5, request)
+
+        with HTTMock(mock):
+            data = Farnell.get_farnell_partdata(self, '1469661', 'none')
+        self.assertEqual(data['error_status'], 'OK', 'Test one result')
+        self.assertEqual(data['number_of_results'], 1)
+        self.assertEqual(data['SKU'], '1469661')
+        self.assertEqual(data['MPN'], 'CRCW04020000Z0ED')
+        self.assertEqual(data['description'], 'VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A')
+        self.assertEqual(data['lifecycle_status'], 'STOCKED')
+        self.assertEqual(data['pack_quantity'], '10')
+        self.assertEqual(data['package'], 'STÜCK (GURTABSCHNITT)')
