@@ -7,6 +7,7 @@ from plugin import InvenTreePlugin
 from plugin.mixins import SettingsMixin
 
 from .mouser import Mouser
+from .farnell import Farnell
 
 
 class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
@@ -161,3 +162,44 @@ class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
         self.assertEqual(data['description'], '40V, Low IQ, 3MHz, 2-Phase Synchronous Boost Controller')
         self.assertEqual(data['package'], '')
         self.assertEqual(data['price_breaks'], [])
+
+    def test_create_mouser_cart(self):
+        data = Mouser.create_mouser_cart(self, 0)
+        self.assertEqual(data['ID'], '')
+        self.assertEqual(data['error_status'], 'OK')
+# ----------------------------------------------------------------------------
+# Here comes the Farnell stuff
+
+    def test_create_farnell_cart(self):
+        data = Farnell.create_farnell_cart(self, 0)
+        self.assertEqual(data['ID'], '')
+        self.assertEqual(data['error_status'], 'Not supported yet')
+
+    def test_get_farnell_partdata_errors(self):
+
+        # No access key in settings. We test against the original Farnell API
+        data = Farnell.get_farnell_partdata(self, 'namxxxe', 'none')
+        self.assertEqual(data['error_status'], '{\'code\': 403, \'message\': \'Developer Inactive\'}')
+
+        # Wrong access key in settings. Create a key and test against Farnell API
+        SettingsMixin.set_setting(self, key='FARNELLSEARCHKEY', value='blabla')
+        data = Farnell.get_farnell_partdata(self, 'namxxxe', 'none')
+        self.assertEqual(data['error_status'], '{\'code\': 403, \'message\': \'Developer Inactive\'}')
+
+    def test_get_farnell_partdata(self):
+
+        # Search without results
+        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        content = {
+            'premierFarnellPartNumberReturn': {
+                'numberOfResults': 0
+            }
+        }
+
+        @urlmatch(netloc=r'(.*\.)?api\.element14\.com.*')
+        def mock(url, request):
+            return response(200, content, headers, None, 5, request)
+
+        with HTTMock(mock):
+            data = Farnell.get_farnell_partdata(self, 'blabla', 'none')
+        self.assertEqual(data['error_status'], 'Part with SKU "blabla" not found in Farnell catalog!', 'Test one result')

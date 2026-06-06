@@ -26,6 +26,7 @@ class Farnell():
             part_data['error_status'] = str(response.content)
             return part_data
 
+        # print('Response: ', response)
         # If Farnell has problems with the request there will be an error key in the json
         try:
             part_data['error_status'] = str(response['error'])
@@ -33,8 +34,6 @@ class Farnell():
         except Exception:
             pass
         response = response['premierFarnellPartNumberReturn']
-
-        # print('Response: ', response)
 
         # Lets look if parts have been reported
         if response['numberOfResults'] == 0:
