@@ -206,10 +206,14 @@ based on the country where the request comes from.
 
 ## Working with Farnell
 Farnell shopping carts are not supported but automatic supplier part creation is
-possible es described below. You need a Farnell access key which you enter into the settings.
+possible as described below. You need a Farnell access key which you enter into the settings.
 Farnell requires a shop (region) to be send along with the request. The currency
 for the price breaks is calculated based thereon. Actually the shop and the currency
 is fixed in the code. For other countries than Germany this might need to be changed.
+Farnell has a minimum order quantity on lots of parts. Anyhow the prices and order
+quantities are per piece. That is why the Inventree pack quantity field cannot be 
+used here. The plugin adds the number to the packge field. Not nice but no better
+way for the moment.
 
 ## Automatically create supplierparts
 The plugin can create supplierparts based on the supplier part number. For users with
