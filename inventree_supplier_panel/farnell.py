@@ -34,6 +34,7 @@ class Farnell():
         except Exception:
             pass
         response = response['premierFarnellPartNumberReturn']
+        print(response)
 
         # Lets look if parts have been reported
         if response['numberOfResults'] == 0:
@@ -48,9 +49,13 @@ class Farnell():
         part_data['MPN'] = response['products'][0]['translatedManufacturerPartNumber']
         part_data['URL'] = 'https://www.element14.com/community/view-product.jspa?fsku=' + sku
         part_data['lifecycle_status'] = response['products'][0]['productStatus']
-        part_data['pack_quantity'] = str(response['products'][0]['translatedMinimumOrderQuality'])
+        # the Farnell translatedMinimumOrderQuality is not a pack quantity as ist is used
+        # in Inventree. It is just a minimum order quantity. The reported price is still
+        # per piece. That is why we put this into the pack
+#        part_data['pack_quantity'] = str(response['products'][0]['translatedMinimumOrderQuality'])
+        part_data['pack_quantity'] = '1'
         part_data['description'] = response['products'][0]['displayName']
-        part_data['package'] = response['products'][0]['unitOfMeasure']
+        part_data['package'] = str(response['products'][0]['translatedMinimumOrderQuality']) + ' ' + response['products'][0]['unitOfMeasure']
         for pb in response['products'][0]['prices']:
             new_price = pb['cost']
             part_data['price_breaks'].append({'Quantity': pb['from'], 'Price': new_price, 'Currency': currency})

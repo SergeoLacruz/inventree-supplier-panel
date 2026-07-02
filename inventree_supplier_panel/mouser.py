@@ -128,7 +128,7 @@ class Mouser():
 
     # ------------------------------- get_mouser_package --------------------------
     # Extracts the available packages from the Mouser part data json. The language
-    # the Mouser uses for the anwser cannot be set. It seems to be fixed toe the region
+    # the Mouser uses for the anwser cannot be set. It seems to be fixed to the region
     # where the request comes from. There is a setting for this with two values so far.
     def get_mouser_package(self, part_data):
 
