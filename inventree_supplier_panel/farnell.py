@@ -34,7 +34,6 @@ class Farnell():
         except Exception:
             pass
         response = response['premierFarnellPartNumberReturn']
-        print(response)
 
         # Lets look if parts have been reported
         if response['numberOfResults'] == 0:
