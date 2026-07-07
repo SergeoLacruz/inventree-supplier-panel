@@ -167,11 +167,14 @@ class Digikey():
                 pack_option['ExtendedPrice'] = 0
                 pack_option['MinimumOrderQuantity'] = 1
                 pack_option['PackType'] = 'Obsolete'
+
+                # Select the correct pack option (CT, TR, ...)
                 for pack_option in p['Quantities'][0]['PackOptions']:
-                    if pack_option['DigiKeyPartNumber'] == p['DigiKeyPartNumber']:
+                    if pack_option['DigiKeyPartNumber'] == p['RequestedPartNumber']:
+                        print('break')
                         break
                 if pack_option['MinimumOrderQuantity'] > p['Quantities'][0]['QuantityRequested']:
-                    cart_items.append({'SKU': p['DigiKeyPartNumber'],
+                    cart_items.append({'SKU': pack_option['DigiKeyPartNumber'],
                                        'IPN': p['CustomerReference'],
                                        'MPN': '',
                                        'Manufacturer': '',
@@ -187,7 +190,7 @@ class Digikey():
                         pack = pack_types[pack_option['PackType']]
                     except Exception:
                         pack = pack_option['PackType']
-                    cart_items.append({'SKU': p['DigiKeyPartNumber'],
+                    cart_items.append({'SKU': pack_option['DigiKeyPartNumber'],
                                        'IPN': p['CustomerReference'],
                                        'MPN': p['ManufacturerPartNumber'],
                                        'Manufacturer': p['Manufacturer'],
