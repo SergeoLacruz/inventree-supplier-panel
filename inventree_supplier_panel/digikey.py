@@ -171,7 +171,6 @@ class Digikey():
                 # Select the correct pack option (CT, TR, ...)
                 for pack_option in p['Quantities'][0]['PackOptions']:
                     if pack_option['DigiKeyPartNumber'] == p['RequestedPartNumber']:
-                        print('break')
                         break
                 if pack_option['MinimumOrderQuantity'] > p['Quantities'][0]['QuantityRequested']:
                     cart_items.append({'SKU': pack_option['DigiKeyPartNumber'],
