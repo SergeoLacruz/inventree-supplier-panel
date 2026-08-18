@@ -2,14 +2,15 @@
 # a dict with plugin name so that the data from different plugins does
 # not overlap
 
-class MetaAccess():
+
+class MetaAccess:
 
     def get_value(self, inventree_object, key):
         try:
             value = inventree_object.metadata[self.NAME][key]
-        except Exception:
+        except KeyError:
             value = None
-        return (value)
+        return value
 
     def set_value(self, inventree_object, key, value):
         data = inventree_object.metadata

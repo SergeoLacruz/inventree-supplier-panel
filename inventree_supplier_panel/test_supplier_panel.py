@@ -1,13 +1,12 @@
 """Basic unit tests for the plugin"""
 
-from httmock import urlmatch, HTTMock, response
 from django.test import TestCase
-
+from httmock import HTTMock, response, urlmatch
 from plugin import InvenTreePlugin
 from plugin.mixins import SettingsMixin
 
-from .mouser import Mouser
 from .farnell import Farnell
+from .mouser import Mouser
 
 
 class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
@@ -15,27 +14,35 @@ class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
     # -------------------------------------------------------------------------
     def test_reformat_mouser_price(self):
 
-        self.assertEqual(Mouser.reformat_mouser_price(self, '1.456,34 €'), 1456.34)
-        self.assertEqual(Mouser.reformat_mouser_price(self, '1,45645 €'), 1.45645)
-        self.assertEqual(Mouser.reformat_mouser_price(self, '1,56 $'), 1.56)
-        self.assertEqual(Mouser.reformat_mouser_price(self, ''), 0)
-        self.assertEqual(Mouser.reformat_mouser_price(self, 'Mumpitz'), 0)
+        self.assertEqual(Mouser.reformat_mouser_price(self, "1.456,34 €"), 1456.34)
+        self.assertEqual(Mouser.reformat_mouser_price(self, "1,45645 €"), 1.45645)
+        self.assertEqual(Mouser.reformat_mouser_price(self, "1,56 $"), 1.56)
+        self.assertEqual(Mouser.reformat_mouser_price(self, ""), 0)
+        self.assertEqual(Mouser.reformat_mouser_price(self, "Mumpitz"), 0)
 
     # -------------------------------------------------------------------------
     def test_get_mouser_package(self):
 
-        SettingsMixin.set_setting(self, key='MOUSERLANGUAGE', value='German')
-        part_data = {'ProductAttributes': [
-            {'AttributeName': 'Verpackung', 'AttributeValue': 'Reel'},
-            {'AttributeName': 'Verpackung', 'AttributeValue': 'Cut Tape'},
-            {'AttributeName': 'Verpackung', 'AttributeValue': 'MouseReel',
-                'AttributeCost': 'Für die MouseReel™ wird Ihrem Warenkorb automatisch eine Gebühr...'},
-            {'AttributeName': 'Standardpackungsmenge', 'AttributeValue': '3000'}]}
+        SettingsMixin.set_setting(self, key="MOUSERLANGUAGE", value="German")
+        part_data = {
+            "ProductAttributes": [
+                {"AttributeName": "Verpackung", "AttributeValue": "Reel"},
+                {"AttributeName": "Verpackung", "AttributeValue": "Cut Tape"},
+                {
+                    "AttributeName": "Verpackung",
+                    "AttributeValue": "MouseReel",
+                    "AttributeCost": "Für die MouseReel™ wird Ihrem Warenkorb automatisch eine Gebühr...",
+                },
+                {"AttributeName": "Standardpackungsmenge", "AttributeValue": "3000"},
+            ]
+        }
 
-        self.assertEqual(Mouser.get_mouser_package(self, part_data), 'Reel, Cut Tape, MouseReel, ')
+        self.assertEqual(
+            Mouser.get_mouser_package(self, part_data), "Reel, Cut Tape, MouseReel, "
+        )
 
-        SettingsMixin.set_setting(self, key='MOUSERLANGUAGE', value='English')
-        self.assertEqual(Mouser.get_mouser_package(self, part_data), '')
+        SettingsMixin.set_setting(self, key="MOUSERLANGUAGE", value="English")
+        self.assertEqual(Mouser.get_mouser_package(self, part_data), "")
 
         part_data = {}
         self.assertEqual(Mouser.get_mouser_package(self, part_data), None)
@@ -46,53 +53,65 @@ class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
     def test_get_mouser_partdata_errors(self):
 
         # No access key in settings. We test against the original Mouser API
-        data = Mouser.get_mouser_partdata(self, 'namxxxe', 'none')
-        self.assertEqual(data['error_status'], 'Required')
+        data = Mouser.get_mouser_partdata(self, "namxxxe", "none")
+        self.assertEqual(data["error_status"], "Required")
 
         # Wrong access key in settings. Create a key and test against Mouser API
-        SettingsMixin.set_setting(self, key='MOUSERSEARCHKEY', value='blabla')
-        data = Mouser.get_mouser_partdata(self, 'namxxxe', 'none')
-        self.assertEqual(data['error_status'], 'InvalidAuthorization')
+        SettingsMixin.set_setting(self, key="MOUSERSEARCHKEY", value="blabla")
+        data = Mouser.get_mouser_partdata(self, "namxxxe", "none")
+        self.assertEqual(data["error_status"], "InvalidAuthorization")
 
         # Too many request
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        content = {'Errors': [
-            {'Id': 0,
-             'Code': 'TooManyRequests',
-             'Message': None,
-             'ResourceKey': None,
-             'ResourceFormatString': None,
-             'ResourceFormatString2': None,
-             'PropertyName': None}
-        ], 'SearchResults': None
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        content = {
+            "Errors": [
+                {
+                    "Id": 0,
+                    "Code": "TooManyRequests",
+                    "Message": None,
+                    "ResourceKey": None,
+                    "ResourceFormatString": None,
+                    "ResourceFormatString2": None,
+                    "PropertyName": None,
+                }
+            ],
+            "SearchResults": None,
         }
 
-        @urlmatch(netloc=r'(.*\.)?api\.mouser\.com.*')
+        @urlmatch(netloc=r"(.*\.)?api\.mouser\.com.*")
         def mouser_mock(url, request):
             return response(200, content, headers, None, 5, request)
+
         with HTTMock(mouser_mock):
-            data = Mouser.get_mouser_partdata(self, 'LTC7806IUFDM#WPBF', 'none')
-        self.assertEqual(data['error_status'], 'TooManyRequests', 'Too many requests per day')
+            data = Mouser.get_mouser_partdata(self, "LTC7806IUFDM#WPBF", "none")
+        self.assertEqual(
+            data["error_status"], "TooManyRequests", "Too many requests per day"
+        )
 
         # Unknown error
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        content = {'Errors': [
-            {'Id': 0,
-             'Code': 'WhatEverCode',
-             'Message': None,
-             'ResourceKey': None,
-             'ResourceFormatString': None,
-             'ResourceFormatString2': None,
-             'PropertyName': None}
-        ], 'SearchResults': None
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        content = {
+            "Errors": [
+                {
+                    "Id": 0,
+                    "Code": "WhatEverCode",
+                    "Message": None,
+                    "ResourceKey": None,
+                    "ResourceFormatString": None,
+                    "ResourceFormatString2": None,
+                    "PropertyName": None,
+                }
+            ],
+            "SearchResults": None,
         }
 
-        @urlmatch(netloc=r'(.*\.)?api\.mouser\.com.*')
+        @urlmatch(netloc=r"(.*\.)?api\.mouser\.com.*")
         def mouser_mock(url, request):
             return response(200, content, headers, None, 5, request)
+
         with HTTMock(mouser_mock):
-            data = Mouser.get_mouser_partdata(self, 'LTC7806IUFDM#WPBF', 'none')
-        self.assertEqual(data['error_status'], 'WhatEverCode', 'Some unknown error')
+            data = Mouser.get_mouser_partdata(self, "LTC7806IUFDM#WPBF", "none")
+        self.assertEqual(data["error_status"], "WhatEverCode", "Some unknown error")
 
     # -------------------------------------------------------------------------
     # Test with corect data, one result returned. Because we do not want to
@@ -103,134 +122,157 @@ class TestCartPlugin(TestCase, SettingsMixin, InvenTreePlugin):
     def test_get_mouser_partdata(self):
 
         # Real search without results
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        content = {
-            'Errors': [],
-            'SearchResults': {
-                'NumberOfResult': 0,
-                'Parts': []
-            }
-        }
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        content = {"Errors": [], "SearchResults": {"NumberOfResult": 0, "Parts": []}}
 
-        @urlmatch(netloc=r'(.*\.)?api\.mouser\.com.*')
+        @urlmatch(netloc=r"(.*\.)?api\.mouser\.com.*")
         def mouser_mock(url, request):
             return response(200, content, headers, None, 5, request)
 
         with HTTMock(mouser_mock):
-            data = Mouser.get_mouser_partdata(self, 'blabla', 'none')
-        self.assertEqual(data['error_status'], 'OK', 'Test one result')
-        self.assertEqual(data['number_of_results'], 0)
+            data = Mouser.get_mouser_partdata(self, "blabla", "none")
+        self.assertEqual(data["error_status"], "OK", "Test one result")
+        self.assertEqual(data["number_of_results"], 0)
 
         # Real search with one result
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         content = {
-            'Errors': [],
-            'SearchResults': {
-                'NumberOfResult': 1,
-                'Parts': [{
-                    'Description': '40V, Low IQ, 3MHz, 2-Phase Synchronous Boost Controller',
-                    'LeadTime': '0 Tage',
-                    'LifecycleStatus': None,
-                    'Manufacturer': 'Analog Devices',
-                    'ManufacturerPartNumber': 'LTC7806IUFDM#WPBF',
-                    'Min': '0',
-                    'Mult': '0',
-                    'MouserPartNumber': 'LTC7806IUFDM#WPBF',
-                    'ProductAttributes': [],
-                    'PriceBreaks': [],
-                    'ProductDetailUrl': 'https://www.mouser.de/ProductDetail/Analog-Devices/LTC7806IUFDMWPBF',
-                    'Reeling': False,
-                    'ROHSStatus': '',
-                    'SuggestedReplacement': '',
-                    'AvailabilityInStock': None,
-                    'AvailabilityOnOrder': [],
-                    'InfoMessages': []}]}}
+            "Errors": [],
+            "SearchResults": {
+                "NumberOfResult": 1,
+                "Parts": [
+                    {
+                        "Description": "40V, Low IQ, 3MHz, 2-Phase Synchronous Boost Controller",
+                        "LeadTime": "0 Tage",
+                        "LifecycleStatus": None,
+                        "Manufacturer": "Analog Devices",
+                        "ManufacturerPartNumber": "LTC7806IUFDM#WPBF",
+                        "Min": "0",
+                        "Mult": "0",
+                        "MouserPartNumber": "LTC7806IUFDM#WPBF",
+                        "ProductAttributes": [],
+                        "PriceBreaks": [],
+                        "ProductDetailUrl": "https://www.mouser.de/ProductDetail/Analog-Devices/LTC7806IUFDMWPBF",
+                        "Reeling": False,
+                        "ROHSStatus": "",
+                        "SuggestedReplacement": "",
+                        "AvailabilityInStock": None,
+                        "AvailabilityOnOrder": [],
+                        "InfoMessages": [],
+                    }
+                ],
+            },
+        }
 
-        @urlmatch(netloc=r'(.*\.)?api\.mouser\.com.*')
+        @urlmatch(netloc=r"(.*\.)?api\.mouser\.com.*")
         def mouser_mock(url, request):
             return response(200, content, headers, None, 5, request)
 
         with HTTMock(mouser_mock):
-            data = Mouser.get_mouser_partdata(self, 'LTC7806IUFDM#WPBF', 'none')
-        self.assertEqual(data['error_status'], 'OK', 'Test one result')
-        self.assertEqual(data['number_of_results'], 1)
-        self.assertEqual(data['SKU'], 'LTC7806IUFDM#WPBF')
-        self.assertEqual(data['MPN'], 'LTC7806IUFDM#WPBF')
-        self.assertEqual(data['URL'], 'https://www.mouser.de/ProductDetail/Analog-Devices/LTC7806IUFDMWPBF')
-        self.assertEqual(data['lifecycle_status'], None)
-        self.assertEqual(data['pack_quantity'], '0')
-        self.assertEqual(data['description'], '40V, Low IQ, 3MHz, 2-Phase Synchronous Boost Controller')
-        self.assertEqual(data['package'], '')
-        self.assertEqual(data['price_breaks'], [])
+            data = Mouser.get_mouser_partdata(self, "LTC7806IUFDM#WPBF", "none")
+        self.assertEqual(data["error_status"], "OK", "Test one result")
+        self.assertEqual(data["number_of_results"], 1)
+        self.assertEqual(data["SKU"], "LTC7806IUFDM#WPBF")
+        self.assertEqual(data["MPN"], "LTC7806IUFDM#WPBF")
+        self.assertEqual(
+            data["URL"],
+            "https://www.mouser.de/ProductDetail/Analog-Devices/LTC7806IUFDMWPBF",
+        )
+        self.assertEqual(data["lifecycle_status"], None)
+        self.assertEqual(data["pack_quantity"], "0")
+        self.assertEqual(
+            data["description"],
+            "40V, Low IQ, 3MHz, 2-Phase Synchronous Boost Controller",
+        )
+        self.assertEqual(data["package"], "")
+        self.assertEqual(data["price_breaks"], [])
 
     def test_create_mouser_cart(self):
         data = Mouser.create_mouser_cart(self, 0)
-        self.assertEqual(data['ID'], '')
-        self.assertEqual(data['error_status'], 'OK')
-# ----------------------------------------------------------------------------
-# Here comes the Farnell stuff
+        self.assertEqual(data["ID"], "")
+        self.assertEqual(data["error_status"], "OK")
+
+    # ----------------------------------------------------------------------------
+    # Here comes the Farnell stuff
 
     def test_create_farnell_cart(self):
         data = Farnell.create_farnell_cart(self, 0)
-        self.assertEqual(data['ID'], '')
-        self.assertEqual(data['error_status'], 'Not supported yet')
+        self.assertEqual(data["ID"], "")
+        self.assertEqual(data["error_status"], "Not supported yet")
 
     def test_get_farnell_partdata_errors(self):
 
         # No access key in settings. We test against the original Farnell API
-        data = Farnell.get_farnell_partdata(self, 'namxxxe', 'none')
-        self.assertEqual(data['error_status'], '{\'code\': 403, \'message\': \'Developer Inactive\'}')
+        data = Farnell.get_farnell_partdata(self, "namxxxe", "none")
+        self.assertEqual(
+            data["error_status"], "{'code': 403, 'message': 'Developer Inactive'}"
+        )
 
         # Wrong access key in settings. Create a key and test against Farnell API
-        SettingsMixin.set_setting(self, key='FARNELLSEARCHKEY', value='blabla')
-        data = Farnell.get_farnell_partdata(self, 'namxxxe', 'none')
-        self.assertEqual(data['error_status'], '{\'code\': 403, \'message\': \'Developer Inactive\'}')
+        SettingsMixin.set_setting(self, key="FARNELLSEARCHKEY", value="blabla")
+        data = Farnell.get_farnell_partdata(self, "namxxxe", "none")
+        self.assertEqual(
+            data["error_status"], "{'code': 403, 'message': 'Developer Inactive'}"
+        )
 
     def test_get_farnell_partdata(self):
 
         # Search without results
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
+        content = {"premierFarnellPartNumberReturn": {"numberOfResults": 0}}
+
+        @urlmatch(netloc=r"(.*\.)?api\.element14\.com.*")
+        def mock(url, request):
+            return response(200, content, headers, None, 5, request)
+
+        with HTTMock(mock):
+            data = Farnell.get_farnell_partdata(self, "blabla", "none")
+        self.assertEqual(
+            data["error_status"],
+            'Part with SKU "blabla" not found in Farnell catalog!',
+            "Test one result",
+        )
+
+        # Search with one result
+        headers = {"Content-type": "application/json", "Accept": "application/json"}
         content = {
-            'premierFarnellPartNumberReturn': {
-                'numberOfResults': 0
+            "premierFarnellPartNumberReturn": {
+                "numberOfResults": 1,
+                "products": [
+                    {
+                        "displayName": "VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A",
+                        "vendorName": "VISHAY",
+                        "translatedMinimumOrderQuality": 10,
+                        "unitOfMeasure": "STÜCK (GURTABSCHNITT)",
+                        "translatedManufacturerPartNumber": "CRCW04020000Z0ED",
+                        "sku": "1469661",
+                        "productStatus": "STOCKED",
+                        "prices": [
+                            {"to": 99, "from": 10, "cost": 0.0104},
+                            {"to": 499, "from": 100, "cost": 0.0086},
+                            {"to": 2499, "from": 500, "cost": 0.0069},
+                            {"to": 4999, "from": 2500, "cost": 0.0061},
+                            {"to": 999999999, "from": 5000, "cost": 0.0043},
+                        ],
+                    }
+                ],
             }
         }
 
-        @urlmatch(netloc=r'(.*\.)?api\.element14\.com.*')
+        @urlmatch(netloc=r"(.*\.)?api\.element14\.com.*")
         def mock(url, request):
             return response(200, content, headers, None, 5, request)
 
         with HTTMock(mock):
-            data = Farnell.get_farnell_partdata(self, 'blabla', 'none')
-        self.assertEqual(data['error_status'], 'Part with SKU "blabla" not found in Farnell catalog!', 'Test one result')
-
-        # Search with one result
-        headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
-        content = {
-            'premierFarnellPartNumberReturn': {
-                'numberOfResults': 1,
-                'products': [{
-                    'displayName': 'VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A',
-                    'vendorName': 'VISHAY',
-                    'translatedMinimumOrderQuality': 10,
-                    'unitOfMeasure': 'STÜCK (GURTABSCHNITT)',
-                    'translatedManufacturerPartNumber': 'CRCW04020000Z0ED',
-                    'sku': '1469661',
-                    'productStatus': 'STOCKED',
-                    'prices': [{'to': 99, 'from': 10, 'cost': 0.0104}, {'to': 499, 'from': 100, 'cost': 0.0086}, {'to': 2499, 'from': 500, 'cost': 0.0069}, {'to': 4999, 'from': 2500, 'cost': 0.0061}, {'to': 999999999, 'from': 5000, 'cost': 0.0043}]
-                }]}}
-
-        @urlmatch(netloc=r'(.*\.)?api\.element14\.com.*')
-        def mock(url, request):
-            return response(200, content, headers, None, 5, request)
-
-        with HTTMock(mock):
-            data = Farnell.get_farnell_partdata(self, '1469661', 'none')
-        self.assertEqual(data['error_status'], 'OK', 'Test one result')
-        self.assertEqual(data['number_of_results'], 1)
-        self.assertEqual(data['SKU'], '1469661')
-        self.assertEqual(data['MPN'], 'CRCW04020000Z0ED')
-        self.assertEqual(data['description'], 'VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A')
-        self.assertEqual(data['lifecycle_status'], 'STOCKED')
-        self.assertEqual(data['pack_quantity'], '10')
-        self.assertEqual(data['package'], 'STÜCK (GURTABSCHNITT)')
+            data = Farnell.get_farnell_partdata(self, "1469661", "none")
+        self.assertEqual(data["error_status"], "OK", "Test one result")
+        self.assertEqual(data["number_of_results"], 1)
+        self.assertEqual(data["SKU"], "1469661")
+        self.assertEqual(data["MPN"], "CRCW04020000Z0ED")
+        self.assertEqual(
+            data["description"],
+            "VISHAY - CRCW04020000Z0ED - Null-Ohm-Widerstand, Jumper, 0402 [Metrisch 1005], Dickschichtwiderstand, 100 mW, 1.5 A",
+        )
+        self.assertEqual(data["lifecycle_status"], "STOCKED")
+        self.assertEqual(data["pack_quantity"], "10")
+        self.assertEqual(data["package"], "STÜCK (GURTABSCHNITT)")
