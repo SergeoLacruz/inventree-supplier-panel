@@ -111,45 +111,49 @@ class SupplierCartPanel(UserInterfaceMixin, SettingsMixin, InvenTreePlugin, Urls
 # If the pk of the supplier is not set ein tne settings, the supplier is
 # disabled. The button for Digikey token creation is also here.
 
-    def get_settings_content(self, request):
-        # NOTE: InvenTree 1.x no longer calls this hook -- nothing in the
-        # plugin framework references it, so the setup status table and the
-        # "Create Digikey Token" button below are not rendered any more.
-        # Kept so the Digikey redirect_uri is still derivable; the OAuth flow
-        # needs porting to the new UI before Digikey works on 1.x.
+    def get_admin_source(self):
+        """JS module providing renderPluginSettings for the plugin settings page.
 
-        client_id = self.get_setting('DIGIKEY_CLIENT_ID')
-        base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
-        if base_url == '':
-            base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Missing</span>'
-        elif base_url[0:5] != 'https':
-            base_url_state = '<span class="badge badge-left rounded-pill bg-danger">Server does not run https</span>'
-        else:
-            base_url_state = '<span class="badge badge-left rounded-pill bg-success">OK</span>'
-        redirect_uri = f'{base_url}/{self.base_url}digikeytoken/'
-        url = f'https://api.digikey.com/v1/oauth2/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
-        return f"""
-        <p>Setup:</p>
-        <ol>
-        <li>Read the <a href="https://github.com/SergeoLacruz/inventree-supplier-panel"> docu </a> on github</li>
-        <li>Enable the plugin</li>
-        <li>Put all required keys into settings</li>
-        <li>Enjoy</li>
-        <li>Remove the shopping carts and lists regularly from your accounts</li>
-        </ol>
-        <p>Status:</p>
-        <table class='table table-condensed'>
-           <tr>
-           <td>Server Base URL</td><td>{base_url_state}</td>
-           </tr>
-           <tr>
-           <td>Callback URL (Add this to your Digikey account)</td><td>{redirect_uri}</td>
-           </tr>
-        </table>
-        <a class="btn btn-dark" onclick="window.open('{url}','name','width=1000px,height=800px')"">
-         Create Digikey Token
-        </a>
+        Overrides the base implementation, which resolves ADMIN_SOURCE through
+        staticfiles -- unavailable to an external plugin, same reason as the
+        panel sources. Replaces the dead get_settings_content() hook.
         """
+        return self._panel_source('renderPluginSettings')
+
+    def get_admin_context(self):
+        """Context for the settings page: setup status and the Digikey OAuth URL."""
+        base_url = (InvenTreeSetting.get_setting('INVENTREE_BASE_URL') or '').rstrip('/')
+        client_id = self.get_setting('DIGIKEY_CLIENT_ID')
+
+        if not base_url:
+            base_url_state = 'missing'
+        elif not base_url.startswith('https'):
+            # Digikey rejects a non-https redirect_uri, so this is fatal for the
+            # OAuth flow rather than cosmetic.
+            base_url_state = 'not_https'
+        else:
+            base_url_state = 'ok'
+
+        redirect_uri = f'{base_url}/{self.base_url}digikeytoken/'
+        authorize_url = (
+            'https://api.digikey.com/v1/oauth2/authorize'
+            f'?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}'
+        ) if client_id else ''
+
+        return {
+            'base_url': base_url,
+            'base_url_state': base_url_state,
+            'redirect_uri': redirect_uri,
+            'authorize_url': authorize_url,
+            'has_client_id': bool(client_id),
+            'has_client_secret': bool(self.get_setting('DIGIKEY_CLIENT_SECRET')),
+            'has_token': bool(self.get_setting('DIGIKEY_TOKEN')),
+            'has_refresh_token': bool(self.get_setting('DIGIKEY_REFRESH_TOKEN')),
+            'mouser_registered': bool(self.get_setting('MOUSER_PK')),
+            'digikey_registered': bool(self.get_setting('DIGIKEY_PK')),
+            'farnell_registered': bool(self.get_setting('FARNELL_PK')),
+            'docs_url': 'https://github.com/SergeoLacruz/inventree-supplier-panel',
+        }
 
 # ----------------------------------------------------------------------------
 # Create the panel that will display on the PurchaseOrder view.
