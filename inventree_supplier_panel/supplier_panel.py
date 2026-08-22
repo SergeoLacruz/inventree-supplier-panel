@@ -2,16 +2,16 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.urls import re_path
 
-from order.views import PurchaseOrderDetail
 from order.models import PurchaseOrder
-from part.views import PartDetail
 from part.models import Part
 from plugin import InvenTreePlugin
-from plugin.mixins import PanelMixin, SettingsMixin, UrlsMixin
+from plugin.mixins import SettingsMixin, UrlsMixin, UserInterfaceMixin
 from company.models import Company, ManufacturerPart, SupplierPart
 from company.models import SupplierPriceBreak
-from users.models import check_user_role
+from users.permissions import check_user_role
 from common.models import InvenTreeSetting
+
+from pathlib import Path
 from .version import PLUGIN_VERSION
 from .mouser import Mouser
 from .digikey import Digikey
@@ -23,7 +23,7 @@ import json
 from datetime import datetime
 
 
-class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
+class SupplierCartPanel(UserInterfaceMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 
     PurchaseOrderPK = 0
 
@@ -112,6 +112,12 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # disabled. The button for Digikey token creation is also here.
 
     def get_settings_content(self, request):
+        # NOTE: InvenTree 1.x no longer calls this hook -- nothing in the
+        # plugin framework references it, so the setup status table and the
+        # "Create Digikey Token" button below are not rendered any more.
+        # Kept so the Digikey redirect_uri is still derivable; the OAuth flow
+        # needs porting to the new UI before Digikey works on 1.x.
+
         client_id = self.get_setting('DIGIKEY_CLIENT_ID')
         base_url = InvenTreeSetting.get_setting('INVENTREE_BASE_URL')
         if base_url == '':
@@ -148,56 +154,117 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # ----------------------------------------------------------------------------
 # Create the panel that will display on the PurchaseOrder view.
 
-    def get_custom_panels(self, view, request):
+    def _refresh_supplier_pks(self):
+        """Resolve each supplier's company pk from the plugin settings.
+
+        A supplier with no pk configured is treated as not registered, which is
+        how the plugin is switched on per supplier.
+        """
+        for name, setting in (('Mouser', 'MOUSER_PK'),
+                              ('Digikey', 'DIGIKEY_PK'),
+                              ('Farnell', 'FARNELL_PK')):
+            try:
+                self.registered_suppliers[name]['pk'] = int(self.get_setting(setting))
+                self.registered_suppliers[name]['is_registered'] = True
+            except Exception:
+                self.registered_suppliers[name]['is_registered'] = False
+
+    def _panel_source(self, function_name):
+        """URL of the panel JS, with the render function appended.
+
+        Served from the plugin's own url space rather than via staticfiles: an
+        external plugin is not a Django app, so its static/ directory is only
+        picked up by a collectstatic run that a pip install does not trigger.
+        """
+        return f'/{self.base_url}panel.js:{function_name}'
+
+    def get_ui_panels(self, request, context, **kwargs):
+        """Return the panels to inject into the front-end.
+
+        Replaces get_custom_panels(). InvenTree 1.x no longer passes a Django
+        view -- it passes the model name and pk of whatever the user is looking
+        at, so the isinstance() checks against PurchaseOrderDetail/PartDetail
+        are gone along with those view classes.
+        """
         panels = []
-        try:
-            self.registered_suppliers['Mouser']['pk'] = int(self.get_setting('MOUSER_PK'))
-            self.registered_suppliers['Mouser']['is_registered'] = True
-        except Exception:
-            self.registered_suppliers['Mouser']['is_registered'] = False
-        try:
-            self.registered_suppliers['Digikey']['pk'] = int(self.get_setting('DIGIKEY_PK'))
-            self.registered_suppliers['Digikey']['is_registered'] = True
-        except Exception:
-            self.registered_suppliers['Digikey']['is_registered'] = False
-        try:
-            self.registered_suppliers['Farnell']['pk'] = int(self.get_setting('FARNELL_PK'))
-            self.registered_suppliers['Farnell']['is_registered'] = True
-        except Exception:
-            self.registered_suppliers['Farnell']['is_registered'] = False
+        context = context or {}
+        target_model = context.get('target_model')
+        target_id = context.get('target_id')
 
-        # For purchase orders: PO transfer
-        if isinstance(view, PurchaseOrderDetail):
-            order = view.get_object()
-            has_permission = (check_user_role(view.request.user, 'purchase_order', 'change')
-                              or check_user_role(view.request.user, 'purchase_order', 'delete')
-                              or check_user_role(view.request.user, 'purchase_order', 'add'))
+        if target_id is None:
+            return panels
 
-            for s in self.registered_suppliers:
-                if order.supplier.pk == self.registered_suppliers[s]['pk'] and has_permission:
-                    panels.append({
-                        'title': self.registered_suppliers[s]['name'] + ' Actions',
-                        'icon': 'fa-user',
-                        'content_template': self.registered_suppliers[s]['po_template'],
-                    })
+        self._refresh_supplier_pks()
 
-        # For parts: Supplier part creation
-        if isinstance(view, PartDetail):
-            has_permission = (check_user_role(view.request.user, 'part', 'change')
-                              or check_user_role(view.request.user, 'part', 'delete')
-                              or check_user_role(view.request.user, 'part', 'add'))
-            show_panel = False
-            for s in self.registered_suppliers:
-                show_panel = show_panel or self.registered_suppliers[s]['is_registered']
-            part = view.get_object()
-            self.manufacturer_parts = ManufacturerPart.objects.filter(part=part.pk)
-            if has_permission and show_panel and part.purchaseable:
+        if target_model == 'purchaseorder':
+            try:
+                order = PurchaseOrder.objects.get(pk=target_id)
+            except (PurchaseOrder.DoesNotExist, ValueError):
+                return panels
+
+            has_permission = (check_user_role(request.user, 'purchase_order', 'change')
+                              or check_user_role(request.user, 'purchase_order', 'delete')
+                              or check_user_role(request.user, 'purchase_order', 'add'))
+            if not has_permission:
+                return panels
+
+            for name, supplier in self.registered_suppliers.items():
+                if not supplier['is_registered']:
+                    continue
+                if order.supplier_id != supplier['pk']:
+                    continue
                 panels.append({
-                    'title': 'Automatic Supplier parts',
-                    'icon': 'fa-user',
-                    'content_template': 'supplier_panel/add_supplierpart.html',
+                    'key': f'suppliercart-{name.lower()}',
+                    'title': f'{supplier["name"]} Actions',
+                    'icon': 'ti:shopping-cart:outline',
+                    'source': self._panel_source('renderPurchaseOrderPanel'),
+                    'context': {
+                        'supplier': supplier['name'],
+                        'order_pk': order.pk,
+                        'transfer_url': f'/{self.base_url}transfercart/{order.pk}/',
+                        # Whatever cart was last built for this order, so the
+                        # panel has something to show before the button is used.
+                        'cart': MetaAccess.get_value(self, order, 'cart'),
+                    },
                 })
+
+        elif target_model == 'part':
+            try:
+                part = Part.objects.get(pk=target_id)
+            except (Part.DoesNotExist, ValueError):
+                return panels
+
+            has_permission = (check_user_role(request.user, 'part', 'change')
+                              or check_user_role(request.user, 'part', 'delete')
+                              or check_user_role(request.user, 'part', 'add'))
+            suppliers = [{'pk': s['pk'], 'name': s['name']}
+                         for s in self.registered_suppliers.values() if s['is_registered']]
+
+            if has_permission and suppliers and part.purchaseable:
+                self.manufacturer_parts = ManufacturerPart.objects.filter(part=part.pk)
+                panels.append({
+                    'key': 'suppliercart-add-supplierpart',
+                    'title': 'Automatic Supplier parts',
+                    'icon': 'ti:building-factory:outline',
+                    'source': self._panel_source('renderPartPanel'),
+                    'context': {
+                        'part_pk': part.pk,
+                        'suppliers': suppliers,
+                        'add_url': f'/{self.base_url}addsupplierpart',
+                    },
+                })
+
         return panels
+
+    def serve_panel_js(self, request):
+        """Serve the panel JavaScript module."""
+        js_path = Path(__file__).parent / 'static' / 'suppliercart' / 'supplier_cart.js'
+        try:
+            body = js_path.read_text(encoding='utf-8')
+        except OSError:
+            return HttpResponse('// supplier_cart.js not found', status=404,
+                                content_type='text/javascript')
+        return HttpResponse(body, content_type='text/javascript')
 
     def setup_urls(self):
         return [
@@ -207,6 +274,9 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
             # Now for the plugin
             re_path(r'transfercart/(?P<pk>\d+)/', self.transfer_cart, name='transfer-cart'),
             re_path(r'addsupplierpart(?:\.(?P<format>json))?$', self.add_supplierpart, name='add-supplierpart'),
+
+            # Panel JS module, imported dynamically by the front-end
+            re_path(r'^panel\.js$', self.serve_panel_js, name='panel-js'),
         ]
 
 # --------------------------- get_partdata ------------------------------------
@@ -340,7 +410,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
 # ---------------------------- Define the suppliers ----------------------------
     registered_suppliers = {'Mouser': {'pk': 0,
                                        'name': 'Mouser',
-                                       'po_template': 'supplier_panel/mouser.html',
                                        'is_registered': False,
                                        'get_partdata': Mouser.get_mouser_partdata,
                                        'update_cart': Mouser.update_mouser_cart,
@@ -348,7 +417,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                        },
                             'Digikey': {'pk': 0,
                                         'name': 'Digikey',
-                                        'po_template': 'supplier_panel/mouser.html',
                                         'is_registered': False,
                                         'get_partdata': Digikey.get_digikey_partdata_v4,
                                         'update_cart': Digikey.update_digikey_cart,
@@ -356,7 +424,6 @@ class SupplierCartPanel(PanelMixin, SettingsMixin, InvenTreePlugin, UrlsMixin):
                                         },
                             'Farnell': {'pk': 0,
                                         'name': 'Farnell',
-                                        'po_template': 'supplier_panel/mouser.html',
                                         'is_registered': False,
                                         'get_partdata': Farnell.get_farnell_partdata,
                                         'update_cart': '',
