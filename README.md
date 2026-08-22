@@ -2,29 +2,23 @@
 
 # The InvenTree-supplier-panel
 
-> **Fork note — InvenTree 1.x port (branch `inventree-1.x-port`, v0.8.0)**
->
-> Upstream 0.7.1 does not load on InvenTree 1.x. It fails discovery with
-> `No module named 'order.views'`, which is the first of four breaks: the
-> server-rendered UI was removed in 1.0, taking `order.views.PurchaseOrderDetail`,
-> `part.views.PartDetail` and `PanelMixin` with it, and `check_user_role`
-> moved from `users.models` to `users.permissions`.
->
-> This branch ports the panels from `PanelMixin` to `UserInterfaceMixin`:
-> `get_custom_panels()` becomes `get_ui_panels()`, and the two Django templates
-> become `static/suppliercart/supplier_cart.js`, rendered client-side. The JS is
-> served from the plugin's own URL rather than staticfiles, because an external
-> plugin is not a Django app and a `pip install` never runs `collectstatic`.
->
-> **Verified on InvenTree 1.5.1 (API 530):** plugin loads with 0 registry
-> errors, mixins `base, settings, ui, urls`; the panel appears on a purchase
-> order whose supplier matches `MOUSER_PK` and not on others; the part panel
-> appears on purchaseable parts.
->
-> **Not ported:** `get_settings_content()` is a dead hook in 1.x — nothing in
-> the plugin framework calls it — so the setup status table and the
-> "Create Digikey Token" button no longer render. Digikey's OAuth flow needs
-> redoing against the new UI before Digikey works on 1.x. Mouser needs neither.
+## InvenTree 1.x
+
+This version targets **InvenTree 1.x**. The 1.0 release removed the
+server-rendered UI, which took `order.views.PurchaseOrderDetail`,
+`part.views.PartDetail` and `PanelMixin` with it, and moved `check_user_role`
+from `users.models` to `users.permissions` — so earlier releases fail
+discovery on 1.x with `No module named 'order.views'`.
+
+Panels are now built on `UserInterfaceMixin`: `get_custom_panels()` becomes
+`get_ui_panels()`, and the Django templates are replaced by
+`static/suppliercart/supplier_cart.js`, rendered client-side. The plugin
+settings page moved from the (now unused) `get_settings_content()` hook to
+`get_admin_source()` / `get_admin_context()`.
+
+Both JS sources are served from the plugin's own URL space rather than through
+staticfiles, because an external plugin is not a Django app and a `pip install`
+does not run `collectstatic`.
 
 This is a plugin for [InvenTree](https://inventree.org), which uploads a purchase order
 to a supplier WEB page. After using this plugin you can directly order the parts on
