@@ -2,6 +2,24 @@
 
 # The InvenTree-supplier-panel
 
+## InvenTree 1.x
+
+This version targets **InvenTree 1.x**. The 1.0 release removed the
+server-rendered UI, which took `order.views.PurchaseOrderDetail`,
+`part.views.PartDetail` and `PanelMixin` with it, and moved `check_user_role`
+from `users.models` to `users.permissions` — so earlier releases fail
+discovery on 1.x with `No module named 'order.views'`.
+
+Panels are now built on `UserInterfaceMixin`: `get_custom_panels()` becomes
+`get_ui_panels()`, and the Django templates are replaced by
+`static/suppliercart/supplier_cart.js`, rendered client-side. The plugin
+settings page moved from the (now unused) `get_settings_content()` hook to
+`get_admin_source()` / `get_admin_context()`.
+
+Both JS sources are served from the plugin's own URL space rather than through
+staticfiles, because an external plugin is not a Django app and a `pip install`
+does not run `collectstatic`.
+
 This is a plugin for [InvenTree](https://inventree.org), which uploads a purchase order
 to a supplier WEB page. After using this plugin you can directly order the parts on
 supplier WEB page. You need to have a supplier account and different kinds of API keys
